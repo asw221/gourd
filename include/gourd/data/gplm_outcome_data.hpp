@@ -230,8 +230,8 @@ void gourd::gplm_outcome_data<T>::process_images_(
 ) {
   const vector_type yi = gourd::map_cifti_to_mat<T>(
     metric,
-    cgp.cifti_indices().cbegin(),
-    cgp.cifti_indices().cend(),
+    cgp.cifti_paired_indices().cbegin(),
+    cgp.cifti_paired_indices().cend(),
     cgp.cifti_array_dim()
   );
   y_.col(i) = yi;

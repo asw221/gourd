@@ -328,8 +328,8 @@ void gourd::gplm_sstat<T>::process_images_(
   }
   const vector_type y = gourd::map_cifti_to_mat<T>(
     metric,
-    cgp.cifti_indices().cbegin(),
-    cgp.cifti_indices().cend(),
+    cgp.cifti_paired_indices().cbegin(),
+    cgp.cifti_paired_indices().cend(),
     cgp.cifti_array_dim()
   );
   if ( yu_.rows() == 0 || yu_.cols() == 0 ) {

@@ -64,10 +64,10 @@ namespace gourd {
     bool operator!() const;
 
     const cifti_indices&    brain_model() const;
-    const std::vector<int>& cifti_indices() const;
-    const cifti_info&       cifti_info() const;
+    const std::vector<int>& cifti_paired_indices() const;
+    const cifti_info&       cifti_paired_info() const;
     const std::vector<int>& gifti_indices() const;
-    const gifti_info&       gifti_info() const;
+    const gifti_info&       gifti_paired_info() const;
 
     int cifti_array_dim() const;
     
@@ -421,12 +421,12 @@ gourd::cifti_gifti_pair::brain_model() const {
 
 
 const std::vector<int>&
-gourd::cifti_gifti_pair::cifti_indices() const {
+gourd::cifti_gifti_pair::cifti_paired_indices() const {
   return paired_cifti_indices_;
 };
 
 
-const gourd::cifti_info& gourd::cifti_gifti_pair::cifti_info() const {
+const gourd::cifti_info& gourd::cifti_gifti_pair::cifti_paired_info() const {
   return cim_info_;
 };
 
@@ -437,7 +437,7 @@ gourd::cifti_gifti_pair::gifti_indices() const {
 };
 
 
-const gourd::gifti_info& gourd::cifti_gifti_pair::gifti_info() const {
+const gourd::gifti_info& gourd::cifti_gifti_pair::gifti_paired_info() const {
   return gim_info_;
 };
 

@@ -308,6 +308,7 @@ double gourd::surface_gpl_model<T>::update(
 };
 
 // \alpha <==> \u03b1
+// \epsilon <==> \u03b5
 // \tau   <==> \u03c4
 
 
@@ -359,7 +360,6 @@ double gourd::surface_gpl_model<T>::update_gamma_hmc(
   }
   return (alpha > 1) ? 1 : alpha;
 };
-  // \epsilon <---> \u03b5
 
 
 
@@ -411,7 +411,7 @@ template< typename T >
 void gourd::surface_gpl_model<T>::sample_momentum_and_energy() {
   energy_momentum_ = 0;
   /* Profile outer loop as parallel */
-#pragma omp parallel for reduction(+:energy_momentum_) shared(momentum_)
+  // #pragma omp parallel for reduction(+:energy_momentum_) shared(momentum_)
   for ( int j = 0; j < momentum_.cols(); j++ ) {
     std::normal_distribution<double> normal(0, 1);
     double z;        // Random normal draw

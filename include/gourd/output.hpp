@@ -121,7 +121,7 @@ void gourd::emplace_paired_data_impl(
   const PtrT data_end
 ) {
   assert( std::distance(data_begin, data_end) ==
-	  cgp.cifti_indices().size() &&
+	  cgp.cifti_paired_indices().size() &&
 	  "emplace_paired_data: bad CIFTI index mapping" );
   ImgT* data = (ImgT*)nim->data;
   const int nvox = nim->nvox;
@@ -129,7 +129,7 @@ void gourd::emplace_paired_data_impl(
     *(data + i) = (ImgT)0;
   int i = 0;
   for ( PtrT ptr = data_begin; ptr != data_end; ++ptr ) {
-    int stride = cgp.cifti_indices()[i];
+    int stride = cgp.cifti_paired_indices()[i];
     *(data + stride) = static_cast<ImgT>( *ptr );
     i++;
   }
