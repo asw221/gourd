@@ -154,7 +154,7 @@ abseil::csv_reader<T>::read_file(
   std::ifstream ifile( filename.c_str(), std::ifstream::in );
   std::vector< std::vector<T> > data;
   int lineno = 0;
-  char delim;
+  char delim = '\0';
   if ( ifile ) {
     while ( ifile ) {
       std::string line;

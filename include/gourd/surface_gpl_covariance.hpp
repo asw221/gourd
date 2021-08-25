@@ -187,7 +187,7 @@ gourd::sgpl::optimize_cov_params(
    *   - rhobeg is supposed to be about one 10th the above size
    */
   double rhobeg = ub[0] - lb[0];
-  for ( size_t i = 1; i < n; i++ ) {
+  for ( int i = 1; i < n; i++ ) {
     rhobeg = std::min( rhobeg, ub[i] - lb[i] );
   }
   rhobeg /= 20;

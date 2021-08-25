@@ -190,7 +190,7 @@ namespace nifti2 {
   const std::filesystem::path initial_dir =
     std::filesystem::current_path();
   const std::filesystem::path fp( fname );
-  ::nifti_image* nim;
+  ::nifti_image* nim = NULL;
   try {
     std::filesystem::current_path( fp.parent_path() );
     nim = ::nifti_image_read( fp.filename().c_str(), read );

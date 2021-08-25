@@ -33,7 +33,7 @@ namespace gifti {
     const std::filesystem::path initial_dir =
       std::filesystem::current_path();
     const std::filesystem::path fp( fname );
-    ::gifti_image* gim;
+    ::gifti_image* gim = NULL;
     try {
       std::filesystem::current_path( fp.parent_path() );
       gim = ::gifti_read_image( fp.filename().c_str(), read );

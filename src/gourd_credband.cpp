@@ -33,7 +33,7 @@ int main( const int argc, const char* argv[] ) {
     std::vector< gourd::band<float> > cbs =
       gourd::get_file_credbands<>( input.logfile(), input.p() );
 
-    if ( refnim->nvox != cbs[0].size() ) {
+    if ( refnim->nvox != (int64_t)cbs[0].size() ) {
       throw std::domain_error(
         "log-file/reference image dimension mismatch" );
     }
@@ -42,7 +42,7 @@ int main( const int argc, const char* argv[] ) {
     int j = 0;
     float* const data_ptr = static_cast<float*>( outnim->data );
     for ( const gourd::band<float>& band : cbs ) {
-      for ( int i = 0; i < band.size(); i++ ) {
+      for ( size_t i = 0; i < band.size(); i++ ) {
 	int stride = i * 2;
 	*(data_ptr + stride) = band.lower[i];
 	*(data_ptr + stride + 1) = band.upper[i];
