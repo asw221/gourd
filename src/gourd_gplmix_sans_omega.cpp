@@ -17,7 +17,7 @@
 #include "gourd/output.hpp"
 #include "gourd/surface_gplmix_model.hpp"
 #include "gourd/cmd/glm_command_parser.hpp"
-#include "gourd/data/gplm_full_data.hpp"
+#include "gourd/data/gplmix_sstat.hpp"
 
 
 
@@ -32,8 +32,8 @@ int main( const int argc, const char* argv[] ) {
   using cov_type = abseil::covariance_functor<scalar_type, 3>;
   using mat_type = typename
     gourd::surface_gplmix_model<scalar_type>::mat_type;
-  // using vec_type = typename
-  //   gourd::surface_gplmix_model<scalar_type>::vector_type;
+  using vec_type = typename
+    gourd::surface_gplmix_model<scalar_type>::vector_type;
 
   gourd::glm_command_parser input( argc, argv );
   if ( !input )  return 1;
@@ -53,10 +53,10 @@ int main( const int argc, const char* argv[] ) {
       input.theta().cend()
     );
     
-    gourd::gplm_full_data<scalar_type> data(
+    gourd::gplmix_sstat<scalar_type> data(
+      input.covariate_file(),
       input.metric_files(),
       input.surface_file(),
-      input.covariate_file(),
       input.variance_component_indices()
     );
 
@@ -70,7 +70,6 @@ int main( const int argc, const char* argv[] ) {
       cov_ptr.get(),
       input.neighborhood(),
       input.distance_metric(),
-      input.neighborhood_random_intercept(),
       input.integrator_steps(),
       input.eps(),
       input.neighborhood_mass(),
@@ -89,22 +88,22 @@ int main( const int argc, const char* argv[] ) {
     }
     mat_type beta_fm = mat_type::Zero( data.nloc(), data.x().cols() );
     mat_type beta_sm = mat_type::Zero( data.nloc(), data.x().cols() );
+    vec_type sigma_fm = vec_type::Zero( data.nloc() );
     //
 
     // Run MCMC
-    std::cout << "Burnin:\n";
     model.warmup( data, input.mcmc_burnin() );
 
-    std::cout << "\nSampling:\n";
     double alpha = 0;
     const int maxit = (input.mcmc_nsamples() - 1) * input.mcmc_thin() + 1;
     for ( int i = 0; i < maxit; i++ ) {
-      alpha += model.update( data, i+1 );
+      alpha += model.update( data );
       //
       if ( i % input.mcmc_thin() == 0 ) {
 	mat_type beta_t = model.beta();
 	beta_fm += beta_t;
 	beta_sm += beta_t.cwiseAbs2();
+	sigma_fm += model.sigma();
 	for ( int j = 0; j < beta_t.cols(); j++ ) {
 	  ologs.write(
             logids[j],
@@ -127,6 +126,7 @@ int main( const int argc, const char* argv[] ) {
     
     beta_fm /= input.mcmc_nsamples();
     beta_sm /= input.mcmc_nsamples();
+    sigma_fm /= input.mcmc_nsamples();
     
     gourd::write_matrix_to_cifti(
       beta_fm, ref,
@@ -135,6 +135,10 @@ int main( const int argc, const char* argv[] ) {
     gourd::write_matrix_to_cifti(
       (beta_sm - beta_fm.cwiseAbs2()).cwiseSqrt().eval(), ref,
       input.output_basename() + std::string("se_beta(s).dtseries.nii")
+    );
+    gourd::write_matrix_to_cifti(
+      sigma_fm, ref,
+      input.output_basename() + std::string("sigma(s).dtseries.nii")
     );
     
   }

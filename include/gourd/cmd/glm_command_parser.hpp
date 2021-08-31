@@ -34,12 +34,15 @@ namespace gourd {
     );
 
     void show_help() const override;
-    void show_usage() const override;    
+    void show_usage() const override;
+
+    bool profile_computation() const;
 
     double eps() const;
     double eps_min() const;
     double metropolis_target() const;
     double neighborhood() const;
+    double neighborhood_random_intercept() const;
     double neighborhood_mass() const;
     double target_mh_rate() const;
 
@@ -66,9 +69,11 @@ namespace gourd {
   private:
     gourd::cov_code  covar_;
     gourd::dist_code dist_;
+    bool profile_;
     double eps_;
     double epsmin_;
     double nhood_;
+    double nhood_rint_;
     double nhood_mass_;
     double target_mh_;
     int burnin_;
@@ -140,6 +145,7 @@ gourd::glm_command_parser::glm_command_parser(
   eps_    = 0.1;
   epsmin_ = 1e-5;
   nhood_ = 6;
+  nhood_rint_ = 4;
   nhood_mass_ = 0;
   target_mh_  = 0.65;
 
@@ -150,6 +156,7 @@ gourd::glm_command_parser::glm_command_parser(
   threads_  = 0;
 
   output_basename_ = "";
+  profile_ = false;
   
 
   /* Parameters that do not have default values:
@@ -192,8 +199,13 @@ gourd::glm_command_parser::glm_command_parser(
 	process_numeric_argument( argc, argv, i, nhood_ );
 	nhood_ = ( nhood_ <= 0 ) ? -1 : nhood_;
       }
+      else if ( arg == "--neighborhood-re" ) {
+	process_numeric_argument( argc, argv, i, nhood_rint_ );
+	nhood_rint_ = ( nhood_rint_ <= 0 ) ? -1 : nhood_rint_;
+      }
       else if ( arg == "--neighborhood-mass" ) {
 	process_numeric_argument( argc, argv, i, nhood_mass_ );
+	nhood_mass_ = ( nhood_mass_ <= 0 ) ? -1 : nhood_mass_;
       }
       else if ( arg == "--matern" ) {
 	covar_ = gourd::cov_code::matern;
@@ -208,6 +220,9 @@ gourd::glm_command_parser::glm_command_parser(
       else if ( arg == "--output" || arg == "-o" ) {
 	process_string_argument(
           argc, argv, i, output_basename_ );
+      }
+      else if ( arg == "--profile" ) {
+	profile_ = true;
       }
       else if ( arg == "--radial-basis" || arg == "-rbf" ) {
 	covar_ = gourd::cov_code::rbf;
@@ -298,6 +313,12 @@ gourd::glm_command_parser::glm_command_parser(
 		<< nhood_ << " given)\n\n";
       this->status_ = call_status::error;
     }
+    if ( nhood_rint_ <= 0 ) {
+      std::cerr << "\n*** ERROR: "
+		<< " NNGP neighborhood must be positive ("
+		<< nhood_rint_ << " given)\n\n";
+      this->status_ = call_status::error;
+    }
     if ( nhood_mass_ <= 0 ) {
       std::cerr << "\n*** ERROR: "
 		<< " NNGP neighborhood must be positive ("
@@ -356,7 +377,9 @@ gourd::glm_command_parser::glm_command_parser(
 
 
 
-
+bool gourd::glm_command_parser::profile_computation() const {
+  return profile_;
+};
 
 double gourd::glm_command_parser::eps() const {
   return eps_;
@@ -372,6 +395,11 @@ double gourd::glm_command_parser::metropolis_target() const {
 
 double gourd::glm_command_parser::neighborhood() const {
   return nhood_;
+};
+
+double gourd::glm_command_parser::neighborhood_random_intercept()
+  const {
+  return nhood_rint_;
 };
 
 double gourd::glm_command_parser::neighborhood_mass() const {

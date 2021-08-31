@@ -55,7 +55,6 @@ namespace gourd {
       const abseil::covariance_functor<T, D>* const cov,
       const T nngp_radius,
       const gourd::dist_code distance,
-      const double mixef_rad = 4,  /*!< Random intercept n'hood radius */
       const int integrator_steps = 10,  /*!< HMC integrator steps */
       const double eps0 = 0.1,     /*!< HMC initial step size */
       const double mass_rad = 4,   /*!< HMC mass matrix n'hood radius */
@@ -74,13 +73,11 @@ namespace gourd {
     
     double update(
       const gourd::gplm_full_data<T>& data,
-      const int monitor = 0,
       const bool update_learning_rate = false
     );
     
     void update_error_terms( const gourd::gplm_full_data<T>& data );
-    // void update_eta();
-    // void update_tau();
+    void update_tau( const gourd::gplm_full_data<T>& data );
 
     bool tune_initial_stepsize(
       const gourd::gplm_full_data<T>& data,
@@ -105,16 +102,14 @@ namespace gourd {
     mat_type gamma_;            /* gamma = rotated beta: B V */
     mat_type gamma_star_;
     mat_type omega_;            /* Random spatial intercepts */
+    vector_type tau_sq_inv_;
+    vector_type zeta_sq_inv_;
     T sigma_sq_inv_;
-    T tau_sq_inv_;
     T eta_sq_inv_;
-    // T xi_;
+    T b_zeta_;
     gourd::nnp_hess<T> c_inv_;
-    gourd::nnp_hess<T> c_tilde_inv_;  /* Inverse correlation of the 
-				       * \omega_i: 
-				       * smaller neighborhoods */
 
-    /* Parameters related to updates */
+    /* Parameters related to HMC */
     mat_type yu_;
     mat_type momentum_;
     mat_type vt_;                /* X = U D ~Vt~ */
@@ -198,11 +193,8 @@ double gourd::surface_gplmix_model<T>::partial_loglik(
   const mat_type ud = data.xsvd_u() * data.xsvd_d().asDiagonal();
   T lk = 0;
   for ( int i = 0; i < data.n(); i++ ) {
-    vector_type resid = data.y(i) -
-      (omega_.col(i) + g * ud.row(i).adjoint());
-    lk += resid.squaredNorm();
-    // lk += ( resid.adjoint() * sigma_sq_inv_.asDiagonal() *
-    // 	    resid ).coeff(0);
+    lk += (data.y(i) - omega_.col(i) - g * ud.row(i).adjoint())
+      .squaredNorm();
   }
   return -0.5 * sigma_sq_inv_ * lk;
 };
@@ -218,7 +210,8 @@ template< typename T >
 double gourd::surface_gplmix_model<T>::partial_logprior(
   const typename gourd::surface_gplmix_model<T>::mat_type& g
 ) const {
-  return -0.5 * tau_sq_inv_ * eta_sq_inv_ * c_inv_.trqf(g);
+  return -0.5 *
+    c_inv_.trqf(g * (vt_ * tau_sq_inv_.cwiseSqrt().asDiagonal()));
 };
 
 
@@ -247,7 +240,8 @@ typename gourd::surface_gplmix_model<T>::mat_type
 gourd::surface_gplmix_model<T>::grad_log_prior(
   const typename gourd::surface_gplmix_model<T>::mat_type& g
 ) const {
-  return -tau_sq_inv_ * eta_sq_inv_ * c_inv_.rmul( g );
+  return -c_inv_.rmul( g *
+    (vt_ * tau_sq_inv_.asDiagonal() * vt_.adjoint()) );
 };
 
 /*
@@ -292,28 +286,25 @@ gourd::surface_gplmix_model<T>::grad_g(
 template< typename T > 
 double gourd::surface_gplmix_model<T>::update(
   const gourd::gplm_full_data<T>& data,
-  const int monitor,
   const bool update_learning_rate
 ) {
+  update_tau( data );
   update_error_terms( data );
   const double alpha = update_gamma_hmc( data, leapfrog_steps_ );
-  if ( monitor > 0 ) {
-    std::cout << "[" << monitor << "]\t\u03b1 = " << alpha
-	      << "\tloglik = " << partial_loglik(data, gamma_)
-	      << "\t\u03b5 = " << lr_
-	      << std::endl;
-  }
+  if ( update_learning_rate )
+    lr_.adapt( alpha );
   //
-  // std::cout << "B =\n" << beta_.topRows(10) << "\n";
-  // std::cout << "W =\n" << omega_.topLeftCorner(10, 4) << "\n";
-  // std::cout << "\u03c4\u00b2 = " << tau_sq_inv_ << "\n";
-  // std::cout << "\u03b7\u00b2 = " << (1 / eta_sq_inv_) << "\n";
-  // std::cout << "\u03c3\u00b2 = " << (1 / sigma_sq_inv_) << "\n";
-  // std::cout << "\t\t<< \u03b5 = " << lr_ << " >>\n";
-  // std::cout << "\t\t<< loglik = " << partial_loglik(data, gamma_) << " >>\n";
-  // std::cout << "\t\t<< \u03b1 = " << alpha << " >>" << std::endl;
+  std::cout << "B =\n"
+  	    << beta_.topRows(10)
+  	    << "\n";
+  std::cout << "\u03c4\u00b2 = " << tau_sq_inv_.cwiseInverse().adjoint() << "\n";
+  std::cout << "\u03b6\u00b2 = " << zeta_sq_inv_.head(6).cwiseInverse().adjoint() << "...\n";
+  std::cout << "\u03b7\u00b2 = " << (1 / eta_sq_inv_) << "\n";
+  std::cout << "\u03c3\u00b2 = " << (1 / sigma_sq_inv_) << "\n";
+  std::cout << "\t\t<< \u03b5 = " << lr_ << " >>\n";
+  std::cout << "\t\t<< \u03b1 = " << alpha << " >>"
+	    << std::endl;
   //
-  if ( update_learning_rate ) { lr_.adapt( alpha ); }
   return alpha;
 };
 
@@ -367,94 +358,79 @@ void gourd::surface_gplmix_model<T>::update_error_terms(
   const gourd::gplm_full_data<T>& data
 ) {
   using gamma_par_t = typename std::gamma_distribution<T>::param_type;
-  using spmat_t = Eigen::SparseMatrix<T>;
-  // First update the \omega_i
-  spmat_t vinv = eta_sq_inv_ * c_tilde_inv_.hessian();
-  vinv += vector_type::Constant(vinv.rows(), sigma_sq_inv_)
-    .asDiagonal();
-  Eigen::SimplicialLDLT<spmat_t> ldlv(vinv);
-  // vector_type rss = vector_type::Zero( data.nloc() );
   T rss = 0;
-  T omega_qf = 0;
-  for ( int i = 0; i < data.n(); i++ ) {
-    std::normal_distribution<T> normal(0, 1);
-    vector_type resid = data.y(i) - beta_ * data.x().row(i).adjoint();
-    vector_type z(resid.size());
-    for ( int j = 0; j < z.size(); j++ ) {
-      z.coeffRef(j) = normal(gourd::urng());
+  T scaled_omega_ss = 0;
+  T zeta_iss = 0;
+  for ( int s = 0; s < data.nloc(); s++ ) {
+    const T v =
+      1 / (sigma_sq_inv_ + zeta_sq_inv_.coeffRef(s) * eta_sq_inv_);
+    const T sqrt_v = std::sqrt(v);
+    T omegas_ss = 0;
+    T partial_rss = 0;
+    // First update \omega_{s,i}
+    for ( int i = 0; i < data.n(); i++ ) {
+      T res = data.y(i, s) -
+	(data.x().row(i) * beta_.row(s).adjoint()).coeff(0);
+      T mu = v * sigma_sq_inv_ * res;
+      std::normal_distribution<T> normal(mu, sqrt_v);
+      omega_.coeffRef(s, i) = normal(gourd::urng());
+      //
+      res -= omega_.coeffRef(s, i);
+      partial_rss += res * res;
+      omegas_ss += omega_.coeffRef(s, i) * omega_.coeffRef(s, i);
     }
-    omega_.col(i) = ldlv.solve(
-      sigma_sq_inv_ * resid +
-      ldlv.vectorD().cwiseSqrt().asDiagonal() * (ldlv.matrixU() * z)
-    );
-    /* V^-1 = L D L' 
-     * Want: V^1/2 z
-     *   solve(V^-1, x) = V^-1/2 z
-     *   V^-1/2 = D^1/2 L'
-     */
-    // rss.noalias() += ( resid - omega_.col(i) ).cwiseAbs2();
-    rss += (resid - omega_.col(i)).squaredNorm();
-    omega_qf += static_cast<T>( c_tilde_inv_.qf(omega_.col(i)) );
+    // Then update \zeta^{-2}(s)
+    const T shape_zeta = 0.5 * (data.n() + 1);
+    const T rate_zeta = b_zeta_ + 0.5 * eta_sq_inv_ * omegas_ss;
+    std::gamma_distribution<T> gamma_zeta(shape_zeta, 1 / rate_zeta);
+    zeta_sq_inv_.coeffRef(s) = gamma_zeta(gourd::urng());
+    //
+    rss += partial_rss;
+    scaled_omega_ss += omegas_ss * zeta_sq_inv_.coeffRef(s);
+    zeta_iss += zeta_sq_inv_.coeffRef(s);
   }
-  // \sigma^-2
-  const T shape_sigma = 0.5 + 0.5 * data.n() * data.nloc();
-  const T rate_sigma = 0.5 + 0.5 * rss;
-  std::gamma_distribution<T> gamma(shape_sigma, 1/rate_sigma);
+  //
+  std::gamma_distribution<T> gamma(1, 1);
+  //
+  /* Update \sigma^{-2} */
+  const T shape_sigma = 0.5 * data.nloc() * data.n() + 1;
+  const T rate_sigma = 0.5 * rss;
+  gamma.param( gamma_par_t(shape_sigma, 1 / rate_sigma) );
   sigma_sq_inv_ = gamma(gourd::urng());
   //
-  // \eta^-2
-  T gamma_qf = 0;
-  for ( int j = 0; j < gamma_.cols(); j++ ) {
-    gamma_qf += c_inv_.qf(gamma_.col(j));
-  }
-  const T shape_eta = 0.5 + 0.5 * data.nloc() * (data.n() + data.p());
-  const T rate_eta = 0.5 + 0.5 * (omega_qf + gamma_qf * tau_sq_inv_);
-  gamma.param( gamma_par_t(shape_eta, 1/rate_eta) );
+  /* Update \eta^{-2} 
+   * (same shape as for sigma ^^) */
+  const T rate_eta = 0.5 * scaled_omega_ss;
+  gamma.param( gamma_par_t(shape_sigma, 1 / rate_eta) );
   eta_sq_inv_ = gamma(gourd::urng());
-  // \tau^-2
-  const T shape_tau = 0.5 + 0.5 * data.nloc() * data.p();
-  const T rate_tau = 0.5 + 0.5 * gamma_qf * eta_sq_inv_;
-  gamma.param( gamma_par_t(shape_tau, 1/rate_tau) );
-  tau_sq_inv_ = gamma(gourd::urng());
-  // T sumsig = 0;
-  // for ( int s = 0; s < rss.size(); s++ ) {
-  //   const T shape_sigma = 0.5 * data.n() + 0.5;
-  //   const T rate_sigma = xi_ + rss.coeffRef(s) / 2;
-  //   std::gamma_distribution<T> gamma(shape_sigma, 1/rate_sigma);
-  //   sigma_sq_inv_.coeffRef(s) = gamma(gourd::urng());
-  //   sumsig += sigma_sq_inv_.coeffRef(s);
-  // }
-  // // \xi
-  // const T shape_xi = 0.5 * data.nloc() + 0.5;
-  // const T rate_xi = 1 + sumsig;
-  // std::gamma_distribution<T> gamma(shape_xi, 1/rate_xi);
-  // xi_ = gamma(gourd::urng());
+  //
+  /* Update b_\ zeta */
+  const T shape_b = 0.5 * (data.nloc() + 1);
+  const T rate_b = 1 + zeta_iss;
+  gamma.param( gamma_par_t(shape_b, 1 / rate_b) );
+  b_zeta_ = gamma(gourd::urng());
 };
 
 
 
 
-// template< typename T > 
-// void gourd::surface_gplmix_model<T>::update_tau() {
-//   const T shape = 0.5 * gamma_.rows() * gamma_.cols() + 1;
-//   const T rate  = 1 - log_prior_kernel_gamma_ /
-//     (tau_sq_inv_ * eta_sq_inv_);
-//   std::gamma_distribution<T> gamma( shape, 1/rate );
-//   tau_sq_inv_ = gamma(gourd::urng());
-// };
-
-
-// template< typename T > 
-// void gourd::surface_gplmix_model<T>::update_eta() {
-//   const T shape = 1 + 0.5 * gamma_.rows() *
-//     (gamma_.cols() + omega_.cols());
-//   const T rate = 1 -
-//     log_prior_kernel_gamma_ / (tau_sq_inv_ * eta_sq_inv_) -
-//     log_prior_kernel_omega_ / eta_sq_inv_;
-//   std::gamma_distribution<T> gamma( shape, 1/rate );
-//   eta_sq_inv_ = gamma(gourd::urng());
-// };
-/* **************************************************************** */
+template< typename T > 
+void gourd::surface_gplmix_model<T>::update_tau(
+  const gourd::gplm_full_data<T>& data
+) {
+  const int s = gamma_.rows();
+  for ( auto& ind : data.varcomp_indices() ) {
+    const int p = ind.size();
+    const T shape = 0.5 * s * p + 1;
+    T rate = 0;
+    for ( int j : ind ) { rate += c_inv_.qf(beta_.col(j)); }
+    rate = 0.5 * rate + 1;
+    std::gamma_distribution<T> gam( shape, 1 / rate );
+    const T draw = gam(gourd::urng());
+    for ( auto j : ind ) tau_sq_inv_.coeffRef(j) = draw;
+  }
+};
+/* ****************************************************************/
 
 
 
@@ -507,11 +483,11 @@ template< typename T >
 void gourd::surface_gplmix_model<T>::set_initial_values(
   const gourd::gplm_full_data<T>& data
 ) {
-  tau_sq_inv_ = 1; eta_sq_inv_ = 1;
+  tau_sq_inv_ = vector_type::Ones( data.p() );
   set_initial_sigma( data );
   set_initial_gamma( data );
   set_initial_omega( data );
-  // update_tau(); /* Must be called AFTER set_initial_gamma() */
+  update_tau( data ); /* Must be called AFTER set_initial_gamma() */
   //
 #ifndef NDEBUG
   std::cout << "Initial gamma:\n" << gamma_.topRows(10)
@@ -564,7 +540,7 @@ void gourd::surface_gplmix_model<T>::warmup(
     std::cerr << "\t*** HMC step size tuning failed\n";
   }
   for ( int i = 0; i < niter; i++ )
-    update(data, i+1, true);
+    update(data, true);
   lr_.fix();
 };
 
@@ -622,6 +598,9 @@ void gourd::surface_gplmix_model<T>::set_initial_omega(
   const gourd::gplm_full_data<T>& data
 ) {
   omega_ = mat_type::Zero( data.nloc(), data.n() );
+  zeta_sq_inv_ = vector_type::Ones( data.nloc() );
+  eta_sq_inv_ = 1;
+  b_zeta_ = 1;
 };
 
 
@@ -636,21 +615,7 @@ void gourd::surface_gplmix_model<T>::set_initial_sigma(
     second += data.y(i).cwiseAbs2().sum();
   }
   first /= ns; second /= ns;
-  sigma_sq_inv_ = 1 / (second - first * first);
-  // int df = data.n() - data.p();
-  // df = ( df < 1 ) ? 1 : df;
-  // sigma_sq_inv_.resize( data.nloc() );
-  // for ( int i = 0; i < data.nloc(); i++ ) {
-  //   T eta = (data.xsvd_u() * data.yu().row(i).adjoint()).sum();
-  //   sigma_sq_inv_.coeffRef(i) =
-  //     df / ( data.yssq().coeffRef(i) - eta * eta / df );
-  //   if ( isnan(sigma_sq_inv_.coeffRef(i)) ||
-  // 	 sigma_sq_inv_.coeffRef(i) <= 0 ) {
-  //     sigma_sq_inv_.coeffRef(i) = 1;
-  //   }
-  // }
-  // //
-  // xi_ = 1;
+  sigma_sq_inv_ = second - first * first;
 };
 /* ****************************************************************/
 
@@ -695,7 +660,6 @@ gourd::surface_gplmix_model<T>::surface_gplmix_model(
   const abseil::covariance_functor<T, D>* const cov,
   const T nngp_radius,
   const gourd::dist_code distance,
-  const double mixef_rad,
   const int integrator_steps,
   const double eps0,
   const double mass_rad,
@@ -709,8 +673,6 @@ gourd::surface_gplmix_model<T>::surface_gplmix_model(
 	 "surface_gplmix_model: negative HMC integrator steps");
   assert(nngp_radius >= 0 &&
 	 "surface_gplmix_model: non-positive NNGP neighborhood radius");
-  assert(mixef_rad >= 0 &&
-	 "surface_gplmix_model: non-positive NNGP neighborhood radius");
   assert(mass_rad >= 0 &&
 	 "surface_gplmix_model: non-positive mass matrix neighborhood");
   //
@@ -721,13 +683,6 @@ gourd::surface_gplmix_model<T>::surface_gplmix_model(
     nngp_radius,
     distance
   );
-  /* Random intercept Hessian */
-  c_tilde_inv_ = gourd::nnp_hess<T>(
-    data.coordinates(),
-    cov,
-    mixef_rad,
-    distance
-  );  
   /* Set Mass matrix */
   mass_ = gourd::nnp_hess<T>(
     data.coordinates(),
@@ -816,11 +771,11 @@ void gourd::surface_gplmix_model<T>::profile(
   dt = 0;
   for ( int i = 0; i < nrep; i++) {
     abseil::timer::start();
-    update_error_terms( data );
+    update_tau( data );
     abseil::timer::stop();
     dt += abseil::timer::diff();
   }
-  std::cout << "Update $\\tau^{-2}, \\eta^{-2}, \\sigma^{-2}$  &  "
+  std::cout << "Update $\\tau^{-2}$  &  "
 	    << (dt / (1e3 * nrep))
 	    << " \\\\\n";
   

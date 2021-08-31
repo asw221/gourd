@@ -51,9 +51,9 @@ namespace gourd {
 
     int n() const;
     int nloc() const;
-    const mat_type&    y() const;
-    const vector_type& y( const int i ) const;
-    scalar_type        y( const int i, const int s ) const;
+    const mat_type&   y() const;
+    const vector_type y( const int i ) const;
+    scalar_type       y( const int i, const int s ) const;
     const vector_type& yssq() const;
 
     const std::vector<coord_type>& coordinates() const;
@@ -130,7 +130,7 @@ gourd::gplm_outcome_data<T>::y() const {
 
 
 template< typename T >
-const typename gourd::gplm_outcome_data<T>::vector_type&
+const typename gourd::gplm_outcome_data<T>::vector_type
 gourd::gplm_outcome_data<T>::y(const int i) const {
   assert(i >= 0 && i < y_.cols() &&
 	 "gplm_outcome_data::y(const int) :  index out of scope" );

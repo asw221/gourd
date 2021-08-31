@@ -400,7 +400,10 @@ void gourd::surface_gpl_model<T>::update_tau() {
   // const T rate = 0.5 * -log_prior_kernel_gamma_ / tau_sq_inv_ + 1;
   const T rate = -log_prior_kernel_gamma_ / tau_sq_inv_ + 1;
   std::gamma_distribution<T> gam( shape, 1 / rate );
-  tau_sq_inv_ = gam(gourd::urng());
+  const T draw = gam(gourd::urng());
+  //
+  log_prior_kernel_gamma_ *= tau_sq_inv_ / draw;
+  tau_sq_inv_ = draw;
 };
 /* ****************************************************************/
 
