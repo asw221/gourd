@@ -24,7 +24,7 @@ src/*~
 include/gourd/*~
 src/temp
 include/temp
-include/gourd/temp
+include/gourd/tmp
 
 
 # Ignore Mac specific files
