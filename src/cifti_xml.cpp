@@ -19,6 +19,31 @@
 
 
 
+std::string gourd::brainmodel_xml(
+  const gourd::cifti_indices& model,
+  const bool ltag,
+  const bool rtag
+) {
+  std::ostringstream ss;
+  if ( ltag )  ss << "<BrainModel ";
+  ss << "IndexOffset=\"" << model.IndexOffset << "\" "
+     << "IndexCount=\"" << model.IndexCount << "\" "
+     << "BrainStructure=\"" << model.BrainStructure << "\" "
+     << "ModelType=\"" << model.ModelType << "\" "
+     << "SurfaceNumberOfVertices=\"" << model.SurfaceNumberOfVertices << "\">"
+     << "\n" << std::string(16, ' ') << "<VertexIndices>";
+  const size_t n = model.ind.size();
+  for ( size_t i = 0; i < n; i++ ) {
+    ss << i;
+    if ( i < (n-1) ) ss << " ";
+  }
+  ss << "</VertexIndices>\n";
+  if ( rtag )  ss << std::string(12, ' ') << "</BrainModel>";
+  return ss.str();
+};
+
+
+
 
 void gourd::display(
   const gourd::cifti_info& ci

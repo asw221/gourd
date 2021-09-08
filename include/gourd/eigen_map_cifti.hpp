@@ -239,7 +239,7 @@ gourd::def::map_cifti_to_mat(
   else if ( ndims <= 0 ) {
     throw std::domain_error("CIFTI data lacks dimension info");
   }
-
+  //
   return ( subset_dim == 0 ) ?
     gourd::def::map_cifti_to_mat_row_subset<ImT, T, IndT>
     ( nim, subset_start, subset_end ) :
@@ -262,12 +262,12 @@ gourd::def::map_cifti_to_mat_row_subset(
   const std::vector<int> dims = gourd::nifti2::get_dims(nim);
   assert( (*subset_start) >= 0 );
   assert( *(subset_end - 1) < dims[0] );
-  
+  //
   const int ndims = dims.size();
   const int nx = ( ndims >= 1 ) ? dims[0] : 1;
   const int ny = ( ndims >= 2 ) ? dims[1] : 1;
   const int dx = std::distance(subset_start, subset_end);
-  
+  //
   Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m_data(dx, ny);
   const ImT* const data_ptr = gourd::nifti2::get_data_ptr<ImT>(nim);
   IndT v_it = subset_start;
@@ -296,11 +296,11 @@ gourd::def::map_cifti_to_mat_col_subset(
   const std::vector<int> dims = gourd::nifti2::get_dims(nim);
   assert( *subset_start >= 0 );
   assert( *(subset_end - 1) < dims[1] );
-  
+  //  
   const int ndims = dims.size();
   const int nx = ( ndims >= 1 ) ? dims[0] : 1;
   const int dy = std::distance(subset_start, subset_end);
-  
+  //
   Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m_data(nx, dy);
   const ImT* const data_ptr = gourd::nifti2::get_data_ptr<ImT>(nim);
   IndT v_it = subset_start;

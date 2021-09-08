@@ -70,12 +70,20 @@ target_link_libraries(gourd_gplmix
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
 
+## --- gourd_sglm ----------------------------------------------------
+add_executable(gourd_sglm gourd_sglm.cpp cifti_xml.cpp)
+set_target_properties(gourd_sglm PROPERTIES
+		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
+target_link_libraries(gourd_sglm
+		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
+		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+
 
 ## --- cifti_info ----------------------------------------------------
 add_executable(cifti_info cifti_info.cpp
 			  cifti_xml.cpp)
 set_target_properties(cifti_info PROPERTIES RUNTIME_OUTPUT_DIRECTORY
-		"${CMAKE_BINARY_DIR}/bin")
+		"${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(cifti_info NIFTI::cifti NIFTI::nifti2)
 
 

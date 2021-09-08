@@ -68,7 +68,7 @@ gourd::gplm_full_data<T>::gplm_full_data(
   gourd::gplm_outcome_data<T>(yfiles, surf_file)
 {
   x_ = gourd::utilities::read_csv<T>( covar_file );
-  if ( x_.rows() != yfiles.size() ) {
+  if ( x_.rows() != (int)yfiles.size() ) {
     throw std::domain_error( "Design matrix rows not equal to length "
 			     "of outcome files" );
   }

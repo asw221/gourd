@@ -128,6 +128,15 @@ namespace nifti2 {
     const intent ic = intent::estimate,
     const int dtype = data_t<float>
   );
+  
+  /*! Create new CIFTI image by dimensions
+   */
+  ::nifti_image* create_cifti(
+    const int nu,
+    const int nv,
+    const intent ic = intent::estimate,
+    const int dtype = data_t<float>
+  );
 
 
   /*! Get dimensions of data array 
@@ -170,7 +179,14 @@ namespace nifti2 {
   bool uses_datatype( const ::nifti_image* const nim );
 
 
-
+  /*! Replace CIFTI extension
+   *
+   * Mildly dangerous operation
+   */
+  void replace_cifti_extension(
+    ::nifti_image* const nim,
+    const std::string& ext
+  );
   
 };
   // namespace gourd::nifti2
@@ -278,21 +294,26 @@ void gourd::nifti2::image_write(
 	     << "$3"                  // Etc.
 	     << "/>";                 // XML block terminus
     std::string ext = std::regex_replace(oldext, ex, formatss.str());
-    /* Per nifti1.h, extensions' size must be a multiple of 16.
-     * There's a further 8 bit offset for 'esize' and 'ecode'
-     * fields.
-     *  -> Below, replacing ext.length() by utf8::distance
-     *     might be safer? Not sure how always CIFTI
-     *     extensions use utf-8 encoding. May need a check
-     *     on the XML header line
-     */
-    ext += std::string(16 - ext.length() % 16 + 8, '\0');
-    nim->ext_list->esize = ext.length() + 8;
-    /* Out with the old (extension), in with the new */
-    delete[] nim->ext_list->edata;
-    nim->ext_list->edata = new char[ ext.size() ];
-    strncpy( nim->ext_list->edata, ext.c_str(), ext.size() );
+    gourd::nifti2::replace_cifti_extension(nim, ext);
   }
+  return nim;
+};
+
+
+
+
+::nifti_image* gourd::nifti2::create_cifti(
+  const int nu,
+  const int nv,
+  const gourd::nifti2::intent ic,
+  const int dtype
+) {
+  assert( nu >= 1 && "create_cifti: CIFTI dims must be > 0" );
+  assert( nv >= 1 && "create_cifti: CIFTI dims must be > 0" );
+  std::array<int64_t, 8> dims{ 0, 1, 1, 1, 1, nu, nv, 1 };
+  dims[0] = (nv > 1) ? 6 : ((nu > 1) ? 5 : 0);
+  ::nifti_image* nim = ::nifti_make_new_nim(dims.data(), dtype, 1);
+  nim->intent_code = static_cast<int>(ic);
   return nim;
 };
 
@@ -334,6 +355,37 @@ std::vector<int> gourd::nifti2::get_dims(
   dim.shrink_to_fit();
   return dim;
 };
+
+
+
+void gourd::nifti2::replace_cifti_extension(
+  ::nifti_image* const nim,
+  const std::string& ext
+) {
+  /* Per nifti1.h, extensions' size must be a multiple of 16.
+   * There's a further 8 bit offset for 'esize' and 'ecode'
+   * fields.
+   *  -> Below, replacing ext.length() by utf8::distance
+   *     might be safer? Not sure how always CIFTI
+   *     extensions use utf-8 encoding. May need a check
+   *     on the XML header line
+   */
+  std::string e = ext + std::string(16 - ext.length() % 16 + 8, '\0');
+  /* Out with the old (extension), in with the new */
+  nim->num_ext = 1;
+  if ( nim->ext_list ) {
+    delete[] nim->ext_list->edata;
+  }
+  else {
+    nim->ext_list = new ::nifti1_extension;
+  }
+  nim->ext_list->esize = e.length() + 8;
+  nim->ext_list->ecode = 32;  // <-
+  nim->ext_list->edata = new char[ e.size() ];
+  strncpy( nim->ext_list->edata, e.c_str(), e.size() );
+};
+
+
 
 
 #include "gourd/nifti_uses_datatype.inl"

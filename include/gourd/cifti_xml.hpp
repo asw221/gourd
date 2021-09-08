@@ -57,7 +57,13 @@ namespace gourd {
   };
 
 
-
+  /*! Retrieve brain model XML from a \c cifti_indices struct 
+   */
+  std::string brainmodel_xml(
+    const gourd::cifti_indices& model,
+    const bool ltag = true,  /*!< Tag beginning with \c <BrainModel */
+    const bool rtag = false  /*!< Tag end with \c </BrainModel> */
+  );
   
 
   /*! Parse CIFTI xml Data

@@ -236,7 +236,7 @@ gourd::glm_command_parser::glm_command_parser(
       else if ( arg == "--subset" ) {
 	process_file_argument( argc, argv, i, subset_file_ );
       }
-      else if ( arg == "--surface" ) {
+      else if ( arg == "--surface" || arg == "-surf" ) {
 	process_file_argument( argc, argv, i, surface_file_ );
       }
       else if ( arg == "--theta" ) {

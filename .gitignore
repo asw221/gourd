@@ -22,8 +22,8 @@ test/*
 *~
 src/*~
 include/gourd/*~
-src/temp
-include/temp
+src/tmp
+include/tmp
 include/gourd/tmp
 
 

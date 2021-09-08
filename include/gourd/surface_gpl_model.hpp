@@ -59,7 +59,7 @@ namespace gourd {
       const gourd::dist_code distance,
       const int integrator_steps = 10,  /*!< HMC integrator steps */
       const double eps0 = 0.1,     /*!< HMC initial step size */
-      const double mass_rad = 4,   /*!< HMC mass matrix n'hood radius */
+      const double mass_rad = 3,   /*!< HMC mass matrix n'hood radius */
       const double alpha0 = 0.65,  /*!< HMC target Metropolis-Hastings rate */
       const double eps_min = 1e-5, /*!< HMC minimum step size */
       const double g0 = 0.05,      /*!< HMC dual-averaging tuning parameter */
@@ -339,7 +339,8 @@ double gourd::surface_gpl_model<T>::update_gamma_hmc(
   momentum_ += k * eps * grad_g( data, gamma_ );
   for ( int step = 0; step < integrator_steps; step++ ) {
     k = (step == (integrator_steps - 1)) ? 0.5 : 1;
-    gamma_star_.noalias() += eps * mass_.irmul( momentum_ );
+    gamma_star_.noalias() +=
+      (eps / tau_sq_inv_) * mass_.irmul( momentum_ );
     momentum_.noalias() += k * eps * grad_g( data, gamma_star_ );
   }
   // ( momentum_ *= -1 )
@@ -402,7 +403,7 @@ void gourd::surface_gpl_model<T>::update_tau() {
   std::gamma_distribution<T> gam( shape, 1 / rate );
   const T draw = gam(gourd::urng());
   //
-  log_prior_kernel_gamma_ *= tau_sq_inv_ / draw;
+  log_prior_kernel_gamma_ *= draw / tau_sq_inv_;
   tau_sq_inv_ = draw;
 };
 /* ****************************************************************/
@@ -432,7 +433,7 @@ void gourd::surface_gpl_model<T>::sample_momentum_and_energy() {
     energy_momentum_ += partial_sum;
   }
   energy_momentum_ *= 0.5;
-  momentum_ = mass_.hprod(momentum_).eval();
+  momentum_ = std::sqrt(tau_sq_inv_) * mass_.hprod(momentum_).eval();
   /* ^^ Inefficient? Not really. Appears to be very marginally faster 
    * than preallocating the memory and copying into momentum_
    */
@@ -442,7 +443,7 @@ void gourd::surface_gpl_model<T>::sample_momentum_and_energy() {
 
 template< typename T > 
 double gourd::surface_gpl_model<T>::potential_energy() const {
-  return 0.5 * mass_.triqf(momentum_);
+  return (0.5 / tau_sq_inv_) * mass_.triqf(momentum_);
 };
 
 

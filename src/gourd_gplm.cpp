@@ -39,6 +39,7 @@ int main( const int argc, const char* argv[] ) {
   if ( !input )  return 1;
   else if ( input.help_invoked() )  return 0;
 
+  gourd::set_urng_seed( input.seed() );
   // ::omp_set_num_threads( input.threads() );
   // Eigen::setNbThreads( input.threads() );
 
@@ -141,6 +142,12 @@ int main( const int argc, const char* argv[] ) {
       sigma_fm, ref,
       input.output_basename() + std::string("sigma(s).dtseries.nii")
     );
+    // for ( int j = 0; j < beta_fm.cols(); j++ ) {
+    //   std::ostringstream fss;
+    //   fss << input.output_basename() << "betahat_" << j
+    // 	  << ".dtseries.nii";
+    //   gourd::write_matrix_to_cifti( beta_fm.col(j).eval(), ref, fss.str() );
+    // }
     
   }
   catch ( const std::exception& ex ) {

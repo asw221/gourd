@@ -58,7 +58,7 @@ namespace gourd {
       const double mixef_rad = 4,  /*!< Random intercept n'hood radius */
       const int integrator_steps = 10,  /*!< HMC integrator steps */
       const double eps0 = 0.1,     /*!< HMC initial step size */
-      const double mass_rad = 4,   /*!< HMC mass matrix n'hood radius */
+      const double mass_rad = 3,   /*!< HMC mass matrix n'hood radius */
       const double alpha0 = 0.65,  /*!< HMC target Metropolis-Hastings rate */
       const double eps_min = 1e-5, /*!< HMC minimum step size */
       const double g0 = 0.05,      /*!< HMC dual-averaging tuning parameter */
@@ -78,9 +78,10 @@ namespace gourd {
       const bool update_learning_rate = false
     );
     
-    void update_error_terms( const gourd::gplm_full_data<T>& data );
-    // void update_eta();
-    // void update_tau();
+    void update_error_terms(
+      const gourd::gplm_full_data<T>& data,
+      const double pr_update_omega_i = 0.2
+    );
 
     bool tune_initial_stepsize(
       const gourd::gplm_full_data<T>& data,
@@ -340,7 +341,8 @@ double gourd::surface_gplmix_model<T>::update_gamma_hmc(
   momentum_ += k * eps * grad_g( data, gamma_ );
   for ( int step = 0; step < integrator_steps; step++ ) {
     k = (step == (integrator_steps - 1)) ? 0.5 : 1;
-    gamma_star_.noalias() += eps * mass_.irmul( momentum_ );
+    gamma_star_.noalias() +=
+      (eps / (tau_sq_inv_ * eta_sq_inv_)) * mass_.irmul( momentum_ );
     momentum_.noalias() += k * eps * grad_g( data, gamma_star_ );
   }
   // ( momentum_ *= -1 )
@@ -356,7 +358,6 @@ double gourd::surface_gplmix_model<T>::update_gamma_hmc(
   }
   return (alpha > 1) ? 1 : alpha;
 };
-  // \epsilon <---> \u03b5
 
 
 
@@ -364,7 +365,8 @@ double gourd::surface_gplmix_model<T>::update_gamma_hmc(
 
 template< typename T >
 void gourd::surface_gplmix_model<T>::update_error_terms(
-  const gourd::gplm_full_data<T>& data
+  const gourd::gplm_full_data<T>& data,
+  const double pr_update_omega_i
 ) {
   using gamma_par_t = typename std::gamma_distribution<T>::param_type;
   using spmat_t = Eigen::SparseMatrix<T>;
@@ -377,22 +379,23 @@ void gourd::surface_gplmix_model<T>::update_error_terms(
   T rss = 0;
   T omega_qf = 0;
   for ( int i = 0; i < data.n(); i++ ) {
-    std::normal_distribution<T> normal(0, 1);
     vector_type resid = data.y(i) - beta_ * data.x().row(i).adjoint();
-    vector_type z(resid.size());
-    for ( int j = 0; j < z.size(); j++ ) {
-      z.coeffRef(j) = normal(gourd::urng());
+    std::uniform_real_distribution<double> unif(0, 1);
+    if ( unif(gourd::urng()) < pr_update_omega_i ) {
+#ifdef GOURD_GPLMIX_SAMPLE_RANDOM_EFFECTS
+      vector_type z(resid.size());
+      std::normal_distribution<T> normal(0, 1);
+      for ( int j = 0; j < z.size(); j++ ) {
+	z.coeffRef(j) = normal(gourd::urng());
+      }
+      omega_.col(i) = ldlv.solve(
+        sigma_sq_inv_ * resid +
+	ldlv.vectorD().cwiseSqrt().asDiagonal() * (ldlv.matrixU() * z)
+        );
+#else
+      omega_.col(i) = ldlv.solve( sigma_sq_inv_ * resid );
+#endif
     }
-    omega_.col(i) = ldlv.solve(
-      sigma_sq_inv_ * resid +
-      ldlv.vectorD().cwiseSqrt().asDiagonal() * (ldlv.matrixU() * z)
-    );
-    /* V^-1 = L D L' 
-     * Want: V^1/2 z
-     *   solve(V^-1, x) = V^-1/2 z
-     *   V^-1/2 = D^1/2 L'
-     */
-    // rss.noalias() += ( resid - omega_.col(i) ).cwiseAbs2();
     rss += (resid - omega_.col(i)).squaredNorm();
     omega_qf += static_cast<T>( c_tilde_inv_.qf(omega_.col(i)) );
   }
@@ -416,44 +419,8 @@ void gourd::surface_gplmix_model<T>::update_error_terms(
   const T rate_tau = 0.5 + 0.5 * gamma_qf * eta_sq_inv_;
   gamma.param( gamma_par_t(shape_tau, 1/rate_tau) );
   tau_sq_inv_ = gamma(gourd::urng());
-  // T sumsig = 0;
-  // for ( int s = 0; s < rss.size(); s++ ) {
-  //   const T shape_sigma = 0.5 * data.n() + 0.5;
-  //   const T rate_sigma = xi_ + rss.coeffRef(s) / 2;
-  //   std::gamma_distribution<T> gamma(shape_sigma, 1/rate_sigma);
-  //   sigma_sq_inv_.coeffRef(s) = gamma(gourd::urng());
-  //   sumsig += sigma_sq_inv_.coeffRef(s);
-  // }
-  // // \xi
-  // const T shape_xi = 0.5 * data.nloc() + 0.5;
-  // const T rate_xi = 1 + sumsig;
-  // std::gamma_distribution<T> gamma(shape_xi, 1/rate_xi);
-  // xi_ = gamma(gourd::urng());
 };
 
-
-
-
-// template< typename T > 
-// void gourd::surface_gplmix_model<T>::update_tau() {
-//   const T shape = 0.5 * gamma_.rows() * gamma_.cols() + 1;
-//   const T rate  = 1 - log_prior_kernel_gamma_ /
-//     (tau_sq_inv_ * eta_sq_inv_);
-//   std::gamma_distribution<T> gamma( shape, 1/rate );
-//   tau_sq_inv_ = gamma(gourd::urng());
-// };
-
-
-// template< typename T > 
-// void gourd::surface_gplmix_model<T>::update_eta() {
-//   const T shape = 1 + 0.5 * gamma_.rows() *
-//     (gamma_.cols() + omega_.cols());
-//   const T rate = 1 -
-//     log_prior_kernel_gamma_ / (tau_sq_inv_ * eta_sq_inv_) -
-//     log_prior_kernel_omega_ / eta_sq_inv_;
-//   std::gamma_distribution<T> gamma( shape, 1/rate );
-//   eta_sq_inv_ = gamma(gourd::urng());
-// };
 /* **************************************************************** */
 
 
@@ -481,7 +448,8 @@ void gourd::surface_gplmix_model<T>::sample_momentum_and_energy() {
     energy_momentum_ += partial_sum;
   }
   energy_momentum_ *= 0.5;
-  momentum_ = mass_.hprod(momentum_).eval();
+  momentum_ = std::sqrt(tau_sq_inv_ * eta_sq_inv_) *
+    mass_.hprod(momentum_).eval();
   /* ^^ Inefficient? Not really. Appears to be very marginally faster 
    * than preallocating the memory and copying into momentum_
    */
@@ -491,7 +459,7 @@ void gourd::surface_gplmix_model<T>::sample_momentum_and_energy() {
 
 template< typename T > 
 double gourd::surface_gplmix_model<T>::potential_energy() const {
-  return 0.5 * mass_.triqf(momentum_);
+  return (0.5 / (tau_sq_inv_ * eta_sq_inv_)) * mass_.triqf(momentum_);
 };
 
 
@@ -515,7 +483,7 @@ void gourd::surface_gplmix_model<T>::set_initial_values(
   //
 #ifndef NDEBUG
   std::cout << "Initial gamma:\n" << gamma_.topRows(10)
-  	    << "\n" << std::endl;
+  	    << "...\n" << std::endl;
 #endif
 };
 
