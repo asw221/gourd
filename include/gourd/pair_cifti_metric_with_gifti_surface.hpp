@@ -133,6 +133,8 @@ namespace gourd {
   );
 
 
+
+  /*! Retrieve brain model XML from */
   
 
   namespace def {
@@ -385,7 +387,7 @@ gourd::cifti_gifti_pair::cifti_gifti_pair(
   for ( size_t i = 0; i < cim_info_.MatrixIndicesMap.size(); i++ ) {
     if ( abseil::find_ignore_case(
            cim_info_.MatrixIndicesMap[i].IndicesMapToDataType,
-	   "BRAIN_MODELS") != std::string::npos ) {
+	   "CIFTI_INDEX_TYPE_BRAIN_MODELS") != std::string::npos ) {
       cifti_array_dim_ = nnsd;
       break;
     }

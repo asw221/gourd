@@ -10,8 +10,8 @@
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
 
-#include "abseil/covariance_functors.hpp"
 #include "abseil/coordinates.hpp"
+#include "abseil/covariance_functors.hpp"
 // #include "abseil/timer.hpp"
 
 #include "gourd/options.hpp"  // gourd::dist_code
@@ -247,7 +247,6 @@ void gourd::nnp_hess<T, AccumT>::compute(
   const T r,
   const gourd::dist_code dc
 ) {
-  typedef typename Eigen::Triplet<T> triplet_type;
   /*
    * For faster computation with great-circle distances:
    *
@@ -266,7 +265,7 @@ void gourd::nnp_hess<T, AccumT>::compute(
    *      neighborhoodness/weed out
    *
    */
-
+  typedef typename Eigen::Triplet<T> triplet_type;
   const T surf_radius = abseil::to_spherical(coords[0]).radius();
   const T maxcl = 2 * surf_radius *
     std::sin( r / (surf_radius * 2) );

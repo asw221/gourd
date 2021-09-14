@@ -152,7 +152,6 @@ std::string gourd::simplified_extension(
   size_t first = ext.find("<BrainModel");
   size_t last = ext.rfind("</BrainModel>");
   if ( first == std::string::npos ) return ext;
-  std::cout << "Fully simplified extension\n";
   std::ostringstream ss;
   ss << ext.substr(0, first)
      << gourd::brainmodel_xml( cgp.brain_model() )
