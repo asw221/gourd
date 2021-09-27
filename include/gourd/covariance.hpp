@@ -13,13 +13,20 @@
 
 namespace gourd {
   
-template< typename T, size_t M, typename InputIt >
-void init_cov(
-  std::unique_ptr< abseil::covariance_functor<T, M> >& cov_ptr,
-  const gourd::cov_code function_code,
-  InputIt first,
-  InputIt last
-);
+  template< typename T, size_t M, typename InputIt >
+  void init_cov(
+    std::unique_ptr< abseil::covariance_functor<T, M> >& cov_ptr,
+    const gourd::cov_code function_code,
+    InputIt first,
+    InputIt last
+  );
+
+
+  template< typename T, size_t M >
+  gourd::cov_code get_cov_code(
+    const abseil::covariance_functor<T, M>* const cov_ptr
+  );
+  
   
 }  // namespace gourd
 
@@ -48,5 +55,21 @@ void gourd::init_cov(
     }
   };
 };
+
+
+
+template< typename T, size_t M >
+gourd::cov_code gourd::get_cov_code(
+  const abseil::covariance_functor<T, M>* const cov_ptr
+) {
+  // using rbf_t = abseil::radial_basis<T>;
+  using matern_t = abseil::matern<T>;
+  gourd::cov_code code = gourd::cov_code::rbf;
+  if ( dynamic_cast<const matern_t* const>(cov_ptr) != NULL ) {
+    code = gourd::cov_code::matern;
+  }
+  return code;
+};
+
 
 #endif  // _GOURD_COVARIANCE_

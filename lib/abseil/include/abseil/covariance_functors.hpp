@@ -46,6 +46,11 @@ namespace abseil {
       const T& operator[]( const int pos ) const;
       constexpr size_t size() const { return M; };
 
+      auto begin()        { return _theta.begin(); };
+      auto cbegin() const { return _theta.cbegin(); };
+      auto end()          { return _theta.end(); };
+      auto cend()   const { return _theta.cend(); };
+      
       friend std::ostream& operator<<(
         std::ostream& os,
 	const param_type& param
@@ -80,6 +85,7 @@ namespace abseil {
     virtual T operator() ( const T val ) const;
     virtual T inverse( const T cov ) const;
     virtual T fwhm() const;
+    virtual T variance() const { return _par[0]; };
     // friend bool operator== (const covariance_functor<T>& lhs, const covariance_functor<T>& rhs);
 
     virtual std::array<T, M> gradient( const T val ) const;
@@ -87,6 +93,7 @@ namespace abseil {
     virtual std::array<T, M> param_upper_bounds() const;
 
     virtual void param( const param_type & par );
+    virtual void variance( const T val ) { _par[0] = val; };
     
     param_type param() const;
     constexpr size_t param_size() const noexcept { return M; };

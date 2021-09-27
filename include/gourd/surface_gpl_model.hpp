@@ -1,7 +1,7 @@
 
 #include <cassert>
 #include <cmath>
-// #include <iomanip>
+#include <iomanip>
 #include <iostream>
 #include <random>
 
@@ -11,6 +11,7 @@
 #include <Eigen/Cholesky>
 
 #include "abseil/covariance_functors.hpp"
+#include "abseil/math.hpp"
 #include "abseil/mcmc/learning_rate.hpp"
 
 #include "gourd/nearest_neighbor_process.hpp"
@@ -201,7 +202,15 @@ double gourd::surface_gpl_model<T>::log_likelihood(
    */
   const double ysy = static_cast<double>(
     (data.yssq().adjoint() * sigma_sq_inv_).coeff(0) );
-  return -0.5 * ysy + partial_loglik(data, gamma_);
+  //
+  double logdet_sigma = 0;
+  for ( int i = 0; i < sigma_sq_inv_.size(); i++ )
+    logdet_sigma += std::log(sigma_sq_inv_.coeffRef(i));
+  //
+  const double normc = 0.5 * data.n() * data.nloc() *
+    std::log(0.5 * num::inv_pi_v<double>) +
+    0.5 * data.n() * logdet_sigma;
+  return -0.5 * ysy + partial_loglik(data, gamma_) + normc;
 };
 
 
@@ -298,7 +307,8 @@ double gourd::surface_gpl_model<T>::update(
   update_sigma_xi( data );
   const double alpha = update_gamma_hmc( data, leapfrog_steps_ );
   if ( monitor > 0 ) {
-    std::cout << "[" << monitor << "]\t\u03b1 = " << alpha
+    std::cout << "[" << monitor << "]\t\u03b1 = "
+	      << std::setprecision(3) << std::fixed << alpha
 	      << "\tloglik = " << log_likelihood(data)
 	      << "\t\u03b5 = " << lr_
 	      << std::endl;

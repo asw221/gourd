@@ -60,10 +60,6 @@ int main( const int argc, const char* argv[] ) {
       input.variance_component_indices()
     );
 
-    // std::cout << "d = " << data.xsvd_d().adjoint() << "\n"
-    // 	      << "U = " << data.xsvd_u().topRows(6) << "\n"
-    // 	      << "V = " << data.xsvd_v() << "\n"
-    // 	      << std::endl;
 
     gourd::surface_gplmix_model model(
       data,

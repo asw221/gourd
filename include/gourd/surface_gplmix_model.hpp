@@ -1,7 +1,9 @@
 
 #include <cassert>
 #include <cmath>
+#include <iomanip>
 #include <iostream>
+#include <memory>
 #include <random>
 #include <vector>
 
@@ -10,8 +12,10 @@
 #include <Eigen/SparseCholesky>
 
 #include "abseil/covariance_functors.hpp"
+#include "abseil/math.hpp"
 #include "abseil/mcmc/learning_rate.hpp"
 
+#include "gourd/covariance.hpp"
 #include "gourd/nearest_neighbor_process.hpp"
 #include "gourd/options.hpp"
 #include "gourd/rng.hpp"
@@ -42,6 +46,8 @@ namespace gourd {
     typedef typename Eigen::Matrix<T, Eigen::Dynamic, 1> vector_type;
     typedef typename Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>
       mat_type;
+    // typedef typename Eigen::SparseMatrix<T> spmat_type;
+    using cov_type = abseil::covariance_functor<T, 3>;
 
     /*
      * Needs to construct:
@@ -73,6 +79,10 @@ namespace gourd {
     const mat_type& beta() const;
     const mat_type& omega() const;
     vector_type tau() const;
+
+    double log_likelihood(
+      const gourd::gplm_full_data<T>& data
+    ) const;
     
     double update(
       const gourd::gplm_full_data<T>& data,
@@ -111,6 +121,9 @@ namespace gourd {
     T sigma_sq_inv_;
     T tau_sq_inv_;
     T eta_sq_inv_;
+    //
+    // spmat_type resid_gram_;
+    gourd::nnp_hess<T> resid_gram_;
     // T xi_;
     gourd::nnp_hess<T> c_inv_;
     gourd::nnp_hess<T> c_tilde_inv_;  /* Inverse correlation of the 
@@ -118,7 +131,6 @@ namespace gourd {
 				       * smaller neighborhoods */
 
     /* Parameters related to updates */
-    mat_type yu_;
     mat_type momentum_;
     mat_type vt_;                /* X = U D ~Vt~ */
     double energy_initial_;      /* Partial log posterior */
@@ -133,8 +145,14 @@ namespace gourd {
     int w_leapfrog_steps_;
     std::vector<abseil::learning_rate> w_lr_;
     //
+    std::unique_ptr<cov_type> re_cov_ptr_;
+    gourd::cov_code re_cov_code_;
+    gourd::dist_code re_dist_code_;
+    double re_rad_;
+    //
 
 
+    /* Compute unnormalized log likelihood */
     double partial_loglik(
       const gourd::gplm_full_data<T>& data,
       const mat_type& g
@@ -148,13 +166,6 @@ namespace gourd {
 
     double partial_logprior_omega( const vector_type& w ) const;
 
-
-    /* Compute trace of [a' diag(v) b] */
-    double mprod_trace(
-      const mat_type& a,
-      const mat_type& b,
-      const vector_type& v
-    ) const;
 
     mat_type grad_log_prior( const mat_type& g ) const;
     mat_type grad_log_likelihood(
@@ -215,6 +226,18 @@ namespace gourd {
 
 
 template< typename T >
+double gourd::surface_gplmix_model<T>::log_likelihood(
+  const gourd::gplm_full_data<T>& data
+) const {
+  return 0.5 * data.n() * 
+    (data.nloc() * std::log(0.5 * num::inv_pi_v<double>) +
+     resid_gram_.ldet()) +
+    partial_loglik(data, gamma_);
+};
+
+
+
+template< typename T >
 double gourd::surface_gplmix_model<T>::partial_loglik(
   const gourd::gplm_full_data<T>& data,
   const typename gourd::surface_gplmix_model<T>::mat_type& g
@@ -222,13 +245,11 @@ double gourd::surface_gplmix_model<T>::partial_loglik(
   const mat_type ud = data.xsvd_u() * data.xsvd_d().asDiagonal();
   T lk = 0;
   for ( int i = 0; i < data.n(); i++ ) {
-    vector_type resid = data.y(i) -
-      (omega_.col(i) + g * ud.row(i).adjoint());
-    lk += resid.squaredNorm();
-    // lk += ( resid.adjoint() * sigma_sq_inv_.asDiagonal() *
-    // 	    resid ).coeff(0);
+    vector_type resid = data.y(i) - (g * ud.row(i).adjoint());
+    // lk += ( resid.adjoint() * resid_gram_ * resid ).coeff(0);
+    lk += resid_gram_.qf( resid );
   }
-  return -0.5 * sigma_sq_inv_ * lk;
+  return -0.5 * lk;
 };
 
 
@@ -267,25 +288,6 @@ double gourd::surface_gplmix_model<T>::partial_logprior_omega(
 
 
 
-/* Compute tr(a' diag(v) b) */
-template< typename T >
-double gourd::surface_gplmix_model<T>::mprod_trace(
-  const typename gourd::surface_gplmix_model<T>::mat_type& a,
-  const typename gourd::surface_gplmix_model<T>::mat_type& b,
-  const typename gourd::surface_gplmix_model<T>::vector_type& v
-) const {
-  assert( a.cols() == b.cols() &&
-	  a.rows() == b.rows() &&
-	  a.rows() == v.size() &&
-	  "surface_gplmix_model:matrix trace: dimensions must agree" );
-  double trace = 0;
-  for ( int j = 0; j < a.cols(); j++ )
-    trace += static_cast<double>(
-      (a.col(j).adjoint() * v.asDiagonal() * b.col(j)).coeff(0) );
-  return trace;
-};
-
-
 
 template< typename T > inline
 typename gourd::surface_gplmix_model<T>::mat_type
@@ -319,9 +321,10 @@ gourd::surface_gplmix_model<T>::grad_log_likelihood(
   const gourd::gplm_full_data<T>& data,
   const typename gourd::surface_gplmix_model<T>::mat_type& g
 ) const {
-  return sigma_sq_inv_ *
-    ( data.yu() - omega_ * data.xsvd_u() -
-      g * data.xsvd_d().asDiagonal() ) * data.xsvd_d().asDiagonal();
+  return resid_gram_.rmul(
+    ( data.yu() - g * data.xsvd_d().asDiagonal() ) *
+    data.xsvd_d().asDiagonal()
+  );
 };
 
 
@@ -363,7 +366,8 @@ double gourd::surface_gplmix_model<T>::update(
   update_error_terms( data );
   const double alpha = update_gamma_hmc( data, leapfrog_steps_ );
   if ( monitor > 0 ) {
-    std::cout << "[" << monitor << "]\t\u03b1 = " << alpha
+    std::cout << "[" << monitor << "]\t\u03b1 = "
+	      << std::setprecision(3) << std::fixed << alpha
 	      << "\tloglik = " << partial_loglik(data, gamma_)
 	      << "\t\u03b5 = " << lr_
 	      << std::endl;
@@ -528,6 +532,15 @@ void gourd::surface_gplmix_model<T>::update_error_terms(
   const T rate_tau = 0.5 + 0.5 * gamma_qf * eta_sq_inv_;
   gamma.param( gamma_par_t(shape_tau, 1/rate_tau) );
   tau_sq_inv_ = gamma(gourd::urng());
+  //
+  re_cov_ptr_->variance( 1 / eta_sq_inv_ );
+  resid_gram_ = gourd::nnp_hess<T>(
+    data.coordinates(),
+    re_cov_ptr_.get(),
+    vector_type::Constant(data.nloc(), 1/sigma_sq_inv_),
+    re_rad_,
+    re_dist_code_
+  );
 };
 
 /* **************************************************************** */
@@ -813,7 +826,24 @@ gourd::surface_gplmix_model<T>::surface_gplmix_model(
     cov,
     mixef_rad,
     distance
-  );  
+  );
+  //
+  const typename cov_type::param_type re_theta = cov->param();
+  gourd::init_cov(
+    re_cov_ptr_,
+    gourd::get_cov_code(cov),
+    re_theta.cbegin(),
+    re_theta.cend()
+  );
+  re_dist_code_ = distance;
+  re_rad_ = mixef_rad;
+  resid_gram_ = gourd::nnp_hess<T>(
+    data.coordinates(),
+    cov,
+    mixef_rad,
+    distance
+  );
+  //
   /* Set Mass matrix */
   mass_ = gourd::nnp_hess<T>(
     data.coordinates(),
