@@ -43,15 +43,17 @@ void gourd::init_cov(
   assert( std::distance(first, last) == M &&
 	  "init_cov: bad number of parameters" );
   using rbf_t = abseil::radial_basis<T>;
+  using rq_t = abseil::rational_quadratic<T>;
   using matern_t = abseil::matern<T>;
   switch (function_code) {
     case gourd::cov_code::rbf : {
-      cov_ptr = std::make_unique<rbf_t>( first, last );
-      break;
+      cov_ptr = std::make_unique<rbf_t>( first, last ); break;
+    }
+    case gourd::cov_code::rq : {
+      cov_ptr = std::make_unique<rq_t>( first, last ); break;
     }
     case gourd::cov_code::matern : {
-      cov_ptr = std::make_unique<matern_t>( first, last );
-      break;
+      cov_ptr = std::make_unique<matern_t>( first, last ); break;
     }
   };
 };
@@ -63,9 +65,13 @@ gourd::cov_code gourd::get_cov_code(
   const abseil::covariance_functor<T, M>* const cov_ptr
 ) {
   // using rbf_t = abseil::radial_basis<T>;
+  using rq_t = abseil::rational_quadratic<T>;
   using matern_t = abseil::matern<T>;
   gourd::cov_code code = gourd::cov_code::rbf;
-  if ( dynamic_cast<const matern_t* const>(cov_ptr) != NULL ) {
+  if ( dynamic_cast<const rq_t* const>(cov_ptr) != NULL ) {
+    code = gourd::cov_code::rq;
+  }
+  else if ( dynamic_cast<const matern_t* const>(cov_ptr) != NULL ) {
     code = gourd::cov_code::matern;
   }
   return code;

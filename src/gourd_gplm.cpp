@@ -53,6 +53,7 @@ int main( const int argc, const char* argv[] ) {
       input.theta().cbegin(),
       input.theta().cend()
     );
+    cov_ptr->variance(1);
     
     gourd::gplm_sstat<scalar_type> data(
       input.covariate_file(),

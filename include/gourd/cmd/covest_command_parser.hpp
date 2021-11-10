@@ -116,6 +116,9 @@ gourd::covest_command_parser::covest_command_parser(
       else if ( arg == "--radius" || arg == "--neighborhood" ) {
 	this->process_numeric_argument( argc, argv, i, rad_ );
       }
+      else if ( arg == "--rational-quadratic" || arg == "-rq" ) {
+	cov_ = gourd::cov_code::rq;
+      }
       else if ( arg == "--matern" ) {
 	cov_ = gourd::cov_code::matern;
       }
@@ -205,6 +208,10 @@ void gourd::covest_command_parser::set_theta_default() {
     case gourd::cov_code::rbf    : {
       theta_[0] = 1; theta_[1] = 0.231; theta_[2] = 1;
       break;      
+    }
+    case gourd::cov_code::rq     : {
+      theta_[0] = 1; theta_[1] = 16; theta_[2] = 1;
+      break;
     }
     case gourd::cov_code::matern : {
       theta_[0] = 1; theta_[1] = 4.328; theta_[2] = 0.5;

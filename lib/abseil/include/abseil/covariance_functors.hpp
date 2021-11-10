@@ -45,12 +45,12 @@ namespace abseil {
       T& operator[]( const int pos );
       const T& operator[]( const int pos ) const;
       constexpr size_t size() const { return M; };
-
+      
       auto begin()        { return _theta.begin(); };
       auto cbegin() const { return _theta.cbegin(); };
       auto end()          { return _theta.end(); };
       auto cend()   const { return _theta.cend(); };
-      
+
       friend std::ostream& operator<<(
         std::ostream& os,
 	const param_type& param
@@ -211,6 +211,56 @@ namespace abseil {
     void _compute_normalizing_constant();
   };
 
+
+
+
+
+  /* ****************************************************************/
+  /*! Rational quadratic covariance
+   * 
+   * Parameters are (sigma^2, psi, nu), all of which should be > 0
+   *
+   * C(d) = sigma^2 * (1 + psi * d^2 / nu)^-nu
+   *
+   */
+  template< typename T = double >
+  class rational_quadratic :
+    public covariance_functor<T, 3> {
+  public:
+    typedef T result_type;
+    using param_type = typename covariance_functor<T, 3>::param_type;
+    using covariance_functor<T, 3>::param_size;
+    using covariance_functor<T, 3>::param;
+
+    rational_quadratic();
+
+    explicit rational_quadratic( const param_type& par );
+    
+    template< typename InputIt >
+    rational_quadratic( InputIt first, InputIt last );
+
+    T operator() ( const T val ) const;
+    T inverse( const T val ) const;
+    T fwhm() const;
+
+    std::array<T, 3> gradient( const T val ) const;
+    std::array<T, 3> param_lower_bounds() const;
+    std::array<T, 3> param_upper_bounds() const;
+
+    T variance() const;
+    T nu() const;
+    T psi() const;
+    
+    void param( const param_type& par );
+    void variance( const T val );
+    void nu( const T val );
+    void psi( const T val );
+    
+  private:
+    void _validate_parameters() const;
+    
+  };
+
   
   
 }
@@ -218,9 +268,10 @@ namespace abseil {
 
 
 
-#include <abseil/covariance/covariance_functor_def.inl>
-#include <abseil/covariance/radial_basis_def.inl>
-#include <abseil/covariance/matern_def.inl>
+#include "abseil/covariance/covariance_functor_def.inl"
+#include "abseil/covariance/radial_basis_def.inl"
+#include "abseil/covariance/rational_quadratic_def.inl"
+#include "abseil/covariance/matern_def.inl"
 
 
 

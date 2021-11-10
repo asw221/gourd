@@ -207,6 +207,9 @@ gourd::glm_command_parser::glm_command_parser(
 	process_numeric_argument( argc, argv, i, nhood_mass_ );
 	nhood_mass_ = ( nhood_mass_ <= 0 ) ? -1 : nhood_mass_;
       }
+      else if ( arg == "--rational-quadratic" || arg == "-rq" ) {
+	covar_ = gourd::cov_code::rq;
+      }
       else if ( arg == "--matern" ) {
 	covar_ = gourd::cov_code::matern;
       }
@@ -341,15 +344,18 @@ gourd::glm_command_parser::glm_command_parser(
       theta_.resize(3);
       switch (covar_) {
         case gourd::cov_code::rbf    : {
-	  theta_[0] = 1; theta_[1] = 0.231; theta_[1] = 1; break;
+	  theta_[0] = 1; theta_[1] = 0.231; theta_[2] = 1; break;
+	}
+        case gourd::cov_code::rq     : {
+	  theta_[0] = 1; theta_[1] = 16; theta_[2] = 1; break;
 	}
         case gourd::cov_code::matern : {
-	  theta_[0] = 1; theta_[1] = 4.328; theta_[2] = 0.5;
+	  theta_[0] = 1; theta_[1] = 4.328; theta_[2] = 0.5; break;
 	}
       };
     }
-    // Silently ignore theta[0]:
-    theta_[0] = 1;
+    // // Silently ignore theta[0]:
+    // theta_[0] = 1;
   }
   // if ( help_invoked() )
 

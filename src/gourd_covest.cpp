@@ -88,6 +88,7 @@ int main( const int argc, const char* argv[] ) {
 	      << "\t";
     switch (input.cov_function()) {
       case gourd::cov_code::rbf    : std::cout << "-rbf"; break;
+      case gourd::cov_code::rq     : std::cout << "-rq"; break;
       case gourd::cov_code::matern : std::cout << "--matern"; break;
     }
     std::cout << " --theta ";

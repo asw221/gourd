@@ -10,7 +10,11 @@
 #include <limits>
 #include <stdexcept>
 
-#include <boost/math/special_functions/bessel.hpp>
+#ifdef GOURD_USE_BOOST
+#include "boost/math/special_functions/bessel.hpp"
+#else
+#include "abseil/bessel.hpp"
+#endif
 
 #include "abseil/math.hpp"
 #include "abseil/numderiv.hpp"
@@ -82,9 +86,15 @@ T abseil::matern<T>::operator() ( const T val ) const {
   if ( val == T(0) ) {
     return this->_par[0];
   }
-  return _norm_c *
-    std::pow( std::abs(val), nu() ) *
+#ifdef GOURD_USE_BOOST
+  const T k =
     boost::math::cyl_bessel_k( nu(), _sqrt_2nu_rho * std::abs(val) );
+#else
+  const T k =
+    abseil::cyl_bessel_k( nu(), _sqrt_2nu_rho * std::abs(val) );
+#endif
+  return _norm_c * std::pow( std::abs(val), nu() ) * k;
+    
 };
 
 

@@ -15,6 +15,7 @@ namespace gourd {
    */
   enum class cov_code {
     rbf,    /*!< Radial basis covariance (3 parameters) */
+    rq,     /*!< Rational quadratic covariance (3 parameters) */
     matern  /*!< Matern covariance (3 parameters) */
   };
 

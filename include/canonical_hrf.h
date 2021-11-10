@@ -13,7 +13,7 @@ namespace gourd {
   public:
     typedef T result_type;
 
-    canonical_hrf() : canonical_hrf(6) { ; }
+    // canonical_hrf() : canonical_hrf(6) { ; }
     explicit canonical_hrf(
       const T a1 = 6,   /*!< HRF peak time */
       const T a2 = 16,  /*!< HRF undershoot time */
@@ -23,8 +23,8 @@ namespace gourd {
     );
 
     T operator()( const T t ) const;
-    T gradient( const T t ) const;
-    T gradient_scale( const T t ) const;
+    T gradient( const T t ) const;        /*!< d/dt HRF() */
+    T gradient_scale( const T t ) const;  /*!< d/db1 HRF() */
 
     T peak_scale() const;
     T peak_time()  const;

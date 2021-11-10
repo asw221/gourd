@@ -13,7 +13,7 @@
  * Templated numerical constants for pre c++20 compatibility.
  * Computed with WolframAlpha.
  *
- * Defined inf file math.h
+ * Defined in file math.hpp
  */
 namespace num {
 

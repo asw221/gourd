@@ -15,9 +15,14 @@
 #include "gourd/nifti2.hpp"
 #include "gourd/options.hpp"
 #include "gourd/output.hpp"
-#include "gourd/surface_gplmix_model.hpp"
 #include "gourd/cmd/glm_command_parser.hpp"
 #include "gourd/data/gplm_full_data.hpp"
+
+#ifdef GOURD_GPLMIX_NNGP_APPROX
+#include "gourd/surface_gplmix_model3.hpp"
+#else
+#include "gourd/surface_gplmix_model.hpp"
+#endif
 
 
 
@@ -52,6 +57,13 @@ int main( const int argc, const char* argv[] ) {
       input.theta().cbegin(),
       input.theta().cend()
     );
+#ifndef GOURD_GPLMIX_NNGP_APPROX
+    /* For full update/HMC version, treat cov_ptr as a correlation
+     * functor (set variance parameter to 1). Otherwise, retain 
+     * cov_ptr's input variance parameter
+     */
+    cov_ptr->variance(1);
+#endif
     
     gourd::gplm_full_data<scalar_type> data(
       input.metric_files(),
@@ -88,7 +100,7 @@ int main( const int argc, const char* argv[] ) {
     //
 
     // Run MCMC
-    std::cout << "Burnin:\n";
+    std::cout << "Warmup:\n";
     model.warmup( data, input.mcmc_burnin() );
 
     std::cout << "\nSampling:\n";
