@@ -82,8 +82,8 @@ int main( const int argc, const char* argv[] ) {
     }
 
     std::cout << "\nOptimal " << cov_ptr->param() << "\n"
-	      << "\t(FWHM: " << cov_ptr->fwhm() << ")\n"
-	      << "\t(Log-likelihood: " << -opt.objective << ")\n\n"
+	      << "  -> FWHM: " << cov_ptr->fwhm() << " mm\n"
+	      << "  -> Log-likelihood: " << -opt.objective << "\n\n"
 	      << "To pass the result to another program, use:\n"
 	      << "\t";
     switch (input.cov_function()) {

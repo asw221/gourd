@@ -87,9 +87,11 @@ int main( const int argc, const char* argv[] ) {
       logids[j] = lss.str();
       ologs.add_log( logids[j] );
     }
+    ologs.add_log( "etc" );
     mat_type beta_fm = mat_type::Zero( data.nloc(), data.p() );
     mat_type beta_sm = mat_type::Zero( data.nloc(), data.p() );
     vec_type sigma_fm = vec_type::Zero( data.nloc() );
+    double llk, llk_fm = 0, llk_sm = 0;
     //
 
     // Run MCMC
@@ -114,6 +116,10 @@ int main( const int argc, const char* argv[] ) {
 	    beta_t.data() + (j+1) * data.nloc()
           );
 	}
+	llk = model.log_likelihood( data );
+	llk_fm += llk;  llk_sm += (llk * llk);
+	ologs["etc"] << llk << "," << model.xi() << "," << model.tau()
+		     << std::endl;
       }
     }
 
@@ -121,7 +127,14 @@ int main( const int argc, const char* argv[] ) {
     alpha /= maxit;
     std::cout << "\t<Avg. Metropolis Rate = "
 	      << std::setprecision(4) << std::fixed << alpha
+	      << ">\n";
+    //
+    llk_fm /= input.mcmc_nsamples();
+    llk_sm /= input.mcmc_nsamples();
+    std::cout << "\t<log ML \u2245 "
+	      << (llk_fm - 0.5 * (llk_sm - llk_fm * llk_fm))
 	      << ">\n" << std::endl;
+    //
 
     // Write output images
     ::nifti_image* ref =

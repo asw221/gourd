@@ -19,10 +19,10 @@ namespace gourd {
     void add_log( const std::string& id );
     std::string make_filename( const std::string& suffix );
 
+    std::ofstream& operator[]( const std::string& id );
     /* Throws error if desired element has not yet been created
      * with \c add_log()
      */
-    std::ofstream& operator[]( const std::string& id );
 
     template< typename IterT, typename StrideT = int >
     void write(

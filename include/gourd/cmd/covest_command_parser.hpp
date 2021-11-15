@@ -61,9 +61,25 @@ namespace gourd {
 void gourd::covest_command_parser::show_help() const {
   show_usage();
   std::cerr << "Options:\n"
-	    << "  --surface     file/path  REQURED. GIFTI surface file \n"
+	    << "  --surface      file/path  REQURED. GIFTI surface file \n"
+	    << "  --radius       float      Nearest-Neighbor Gaussian Process radius \n"
+	    << "  --maxit        int        (Default = 5000) \n"
+	    << "  --print-level  int        0: Silent -- 2: Verbose (Default) \n"
+	    << "  --start        float[3]   Optimization starting point \n"
+	    << "  --tol          float      Optimization tolerance (Default = 1e-6) \n"
+	    << "  --which        int        1: Variance; 2: +Width; 3: +Smoothness \n"
 	    << "\n"
-	    << "  --covariates  file/path  Mean model covariates \n"
+	    << "Covariance Functions:\n"
+	    << "  --radial-basis       (Default) \n"
+	    << "  --rational-quadratic \n"
+	    << "  --matern \n"
+	    << "\n"
+	    << "Distance Metrics:\n"
+	    << "  --great-circle       (Default) \n"
+	    << "  --euclidean \n"
+	    << "\n"
+	    << "\nUNUSED\n"
+	    << "  --covariates  file/path  UNUSED. Mean model covariates \n"
 	    << "\n"
 	    << "----------------------------------------------------------------------\n"
 	    << std::endl;
@@ -73,7 +89,7 @@ void gourd::covest_command_parser::show_help() const {
 void gourd::covest_command_parser::show_usage() const {
   std::cerr << "Usage:\n"
 	    << "\t" << this->caller()
-	    << "  path/to/data*.nii --surface path/to/surf.gii <options>\n"
+	    << "  path/to/data*.nii --surface path/to/surf.gii <options> \n"
 	    << std::endl;
 };
 
