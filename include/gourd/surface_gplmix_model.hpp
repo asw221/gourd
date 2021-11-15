@@ -76,9 +76,9 @@ namespace gourd {
     surface_gplmix_model() = default;
     
     T sigma() const;
+    T tau() const;
     const mat_type& beta() const;
     const mat_type& omega() const;
-    vector_type tau() const;
 
     double log_likelihood(
       const gourd::gplm_full_data<T>& data
@@ -778,9 +778,8 @@ T gourd::surface_gplmix_model<T>::sigma() const {
 
 
 template< typename T > inline
-typename gourd::surface_gplmix_model<T>::vector_type
-gourd::surface_gplmix_model<T>::tau() const {
-  return tau_sq_inv_.cwiseInverse().cwiseSqrt();
+T gourd::surface_gplmix_model<T>::tau() const {
+  return std::sqrt(1 / tau_sq_inv_);
 };
 
 /* ****************************************************************/
