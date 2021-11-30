@@ -104,6 +104,9 @@ namespace gourd {
       const gourd::gplm_sstat<T>& data,
       const int nrep = 10
     );
+
+    void beta( const mat_type& b );
+    void sigma( const vector_type& s );
     
     
   protected:
@@ -628,6 +631,35 @@ T gourd::surface_gpl_model<T>::xi() const {
 template< typename T >
 double gourd::surface_gpl_model<T>::learning_rate() const {
   return lr_;
+};
+/* ****************************************************************/
+
+
+
+
+/* ****************************************************************/
+/* 
+ *                               Setters
+ */
+template< typename T > 
+void gourd::surface_gpl_model<T>::beta(
+  const typename gourd::surface_gpl_model<T>::mat_type& b
+) {
+  if ( b.rows() != gamma_.rows() || b.cols() != gamma_.cols() ) {
+    throw std::domain_error( "Cannot change parameter dimensions" );
+  }
+  gamma_ = b * vt_.adjoint();
+};
+
+
+template< typename T > 
+void gourd::surface_gpl_model<T>::sigma(
+  const typename gourd::surface_gpl_model<T>::vector_type& s
+) {
+  if ( s.size() != sigma_sq_inv_.size() ) {
+    throw std::domain_error( "Cannot change parameter dimensions" );
+  }
+  sigma_sq_inv_ = s.cwiseAbs2().cwiseInverse();
 };
 /* ****************************************************************/
 

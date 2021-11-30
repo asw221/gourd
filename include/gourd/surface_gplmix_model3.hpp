@@ -109,6 +109,9 @@ namespace gourd {
     T tau() const;
     const mat_type& beta() const;
 
+    mat_type smdiag( const gourd::gplm_full_data<T>& data ) const;
+    /*<! Compute the diagonal of the smoothing/hat matrix */
+    
     double log_likelihood(
       const gourd::gplm_full_data<T>& data
     ) const;
@@ -136,13 +139,18 @@ namespace gourd {
 
     void warmup(
       gourd::gplm_full_data<T>& data,
-      const int niter
+      const int niter_optim,
+      const int niter_burnin,
+      const T xtol_optim
     );
 
     void profile(
       const gourd::gplm_full_data<T>& data,
       const int nrep = 10
     );
+
+    //
+    void beta( const mat_type& b );
     
     
   protected:
@@ -668,12 +676,16 @@ bool gourd::surface_gplmix_model<T>::tune_initial_stepsize(
 template< typename T > 
 void gourd::surface_gplmix_model<T>::warmup(
   gourd::gplm_full_data<T>& data,
-  const int niter
+  const int niter_optim,
+  const int niter_burnin,
+  const T xtol_optim
 ) {
-  assert(niter >= 0 &&
+  assert(niter_optim >= 0 &&
+	 "surface_gplmix_model: negative optimization iterations");
+  assert(niter_burnin >= 0 &&
 	 "surface_gplmix_model: negative warmup iterations");
   /* Iteratively compute MAP estimate */
-  compute_map_estimate( data );
+  compute_map_estimate( data, niter_optim, xtol_optim );
   //
   for ( int i = 0; i < data.n(); i++ ) {
     data.y_ref().col(i).noalias() -=
@@ -710,13 +722,15 @@ void gourd::surface_gplmix_model<T>::warmup(
   std::cout << re_cov_ptr_->param() << std::endl;
   //
   /* Run HMC burnin */
-  const bool eps_tuned = tune_initial_stepsize(data, 20);
-  if ( !eps_tuned ) {
-    std::cerr << "\t*** HMC step size tuning failed\n";
+  if ( niter_burnin > 0 ) {
+    const bool eps_tuned = tune_initial_stepsize(data, 20);
+    if ( !eps_tuned ) {
+      std::cerr << "\t*** HMC step size tuning failed\n";
+    }
+    for ( int i = 0; i < niter_burnin; i++ )
+      update(data, i+1, true);
+    lr_.fix();
   }
-  for ( int i = 0; i < niter; i++ )
-    update(data, i+1, true);
-  lr_.fix();
 };
 
 
@@ -805,7 +819,7 @@ T gourd::surface_gplmix_model<T>::eta() const {
 
 template< typename T > inline
 T gourd::surface_gplmix_model<T>::sigma() const {
-  return std::sqrt(1 / sigma_sq_inv_);
+  return std::sqrt( 1 / sigma_sq_inv_ );
 };
 
 
@@ -814,6 +828,51 @@ T gourd::surface_gplmix_model<T>::tau() const {
   return std::sqrt( 1 / tau_sq_inv_ );
 };
 
+
+
+template< typename T >
+typename gourd::surface_gplmix_model<T>::mat_type
+gourd::surface_gplmix_model<T>::smdiag(
+  const gourd::gplm_full_data<T>& data					     
+) const {
+  // Compute hat matrix diagonal
+  mat_type dhat = mat_type::Zero(data.nloc(), data.n());
+  const spmat_type sigma_inv = resid_gram_.hessian();
+  for ( int j = 0; j < data.xsvd_d().size(); j++ ) {
+    double dj = data.xsvd_d().coeffRef(j);
+    spmat_type hess = (tau_sq_inv_ * eta_sq_inv_) * c_inv_.hessian();
+    hess += (dj * dj) * sigma_inv;
+    Eigen::SimplicialLDLT<spmat_type> ldl( hess );
+    for ( int k = 0; k < dhat.size(); k++ ) {
+      int s = k % data.nloc();  // location index
+      int i = k / data.nloc();  // subject index
+      double uij = data.xsvd_u().coeffRef(i, j);
+      vector_type v = (dj * uij) * sigma_inv.col( s );
+      vector_type w = ldl.solve( v );
+      dhat.coeffRef(s, i) += (dj * uij) * w.coeff( s );
+    }
+  }
+  return dhat;
+};
+
+/* ****************************************************************/
+
+
+
+/* ****************************************************************/
+/* 
+ *                               Setters
+ */
+template< typename T > 
+void gourd::surface_gplmix_model<T>::beta(
+  const typename gourd::surface_gplmix_model<T>::mat_type& b
+) {
+  if ( b.rows() != gamma_.rows() || b.cols() != gamma_.cols() ) {
+    throw std::domain_error( "Cannot change parameter dimensions" );
+  }
+  beta_  = b;
+  gamma_ = b * vt_.adjoint();
+};
 /* ****************************************************************/
 
 

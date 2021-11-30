@@ -44,6 +44,7 @@ namespace gourd {
     double neighborhood() const;
     double neighborhood_random_intercept() const;
     double neighborhood_mass() const;
+    double optim_xtol() const;
     double target_mh_rate() const;
 
     gourd::cov_code cov_function() const;
@@ -53,6 +54,7 @@ namespace gourd {
     int mcmc_burnin() const;
     int mcmc_nsamples() const;
     int mcmc_thin() const;
+    int optim_maxit() const;
     int threads() const;
     
     unsigned seed() const;
@@ -76,7 +78,9 @@ namespace gourd {
     double nhood_rint_;
     double nhood_mass_;
     double target_mh_;
+    double xtol_;
     int burnin_;
+    int maxit_;
     int nsamples_;
     int steps_;
     int thin_;
@@ -151,6 +155,7 @@ gourd::glm_command_parser::glm_command_parser(
 
   steps_    = 10;
   burnin_   = 1000;
+  maxit_    = 500;
   nsamples_ = 1000;
   thin_     = 1;
   threads_  = 0;
@@ -194,6 +199,10 @@ gourd::glm_command_parser::glm_command_parser(
       }
       else if ( arg == "--euclidean" ) {
 	dist_ = gourd::dist_code::euclidean;
+      }
+      else if ( arg == "--maxit" ) {
+	process_numeric_argument( argc, argv, i, maxit_ );
+	maxit_ = ( maxit_ <= 0 ) ? 1 : maxit_;
       }
       else if ( arg == "--neighborhood" ) {
 	process_numeric_argument( argc, argv, i, nhood_ );
@@ -256,6 +265,10 @@ gourd::glm_command_parser::glm_command_parser(
       else if ( arg == "--varcomp" ||
 		arg == "--variance-components" ) {
 	process_string_argument( argc, argv, i, varcomp_indices_ );
+      }
+      else if ( arg == "--xtol" ) {
+	process_numeric_argument( argc, argv, i, xtol_ );
+	xtol_ = ( xtol_ <= 1e-16 ) ? 1e-16 : xtol_;
       }
       else if ( is_file(arg) ) {
 	metric_files_.push_back( arg );
@@ -412,6 +425,10 @@ double gourd::glm_command_parser::neighborhood_mass() const {
   return nhood_mass_;
 };
 
+double gourd::glm_command_parser::optim_xtol() const {
+  return xtol_;
+};
+
 gourd::cov_code gourd::glm_command_parser::cov_function() const {
   return covar_;
 };
@@ -434,6 +451,10 @@ int gourd::glm_command_parser::mcmc_nsamples() const {
 
 int gourd::glm_command_parser::mcmc_thin() const {
   return thin_;
+};
+
+int gourd::glm_command_parser::optim_maxit() const {
+  return maxit_;
 };
 
 int gourd::glm_command_parser::threads() const {

@@ -67,6 +67,7 @@ add_executable(gourd_gplmix gourd_gplmix.cpp cifti_xml.cpp)
 set_target_properties(gourd_gplmix PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_gplmix
+		OPTIM::bobyqa
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
 
