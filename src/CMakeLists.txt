@@ -103,6 +103,16 @@ target_link_libraries(cifti_info NIFTI::cifti NIFTI::nifti2)
 
 
 
+## --- gourd_vwise_glm -----------------------------------------------
+add_executable(gourd_vwise_glm gourd_vwise_glm.cpp cifti_xml.cpp)
+set_target_properties(gourd_vwise_glm PROPERTIES
+		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
+target_link_libraries(gourd_vwise_glm
+		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
+		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+
+
+
 # target_compile_definitions(___ PUBLIC EIGEN_DONT_PARALLELIZE)
 # ## EIGEN_DONT_PARALLELIZE
 # ## EIGEN_DONT_VECTORIZE

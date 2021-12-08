@@ -83,7 +83,7 @@ int main( const int argc, const char* argv[] ) {
     gourd::output_log ologs( input.output_basename() );
     for ( int j = 0; j < data.p(); j++ ) {
       std::ostringstream lss;
-      lss << "_beta" << std::setfill('0') << std::setw(3) << j;
+      lss << "_beta" << std::setfill('0') << std::setw(4) << j;
       logids[j] = lss.str();
       ologs.add_log( logids[j] );
     }
@@ -92,7 +92,7 @@ int main( const int argc, const char* argv[] ) {
     mat_type beta_fm = mat_type::Zero( data.nloc(), data.p() );
     mat_type beta_sm = mat_type::Zero( data.nloc(), data.p() );
     vec_type sigma_fm = vec_type::Zero( data.nloc() );
-    double llk, llk_fm = 0, llk_sm = 0;
+    long double llk, llk_fm = 0, llk_sm = 0;
     //
 
     // Run MCMC
@@ -117,7 +117,7 @@ int main( const int argc, const char* argv[] ) {
 	    beta_t.data() + (j+1) * data.nloc()
           );
 	}
-	llk = model.log_likelihood( data );
+	llk = static_cast<long double>( model.log_likelihood(data) );
 	llk_fm += llk;  llk_sm += (llk * llk);
 	ologs["_etc"] << std::setprecision(6) << std::fixed
 		      << llk << "," << model.xi() << "," << model.tau()
@@ -134,7 +134,7 @@ int main( const int argc, const char* argv[] ) {
       //
       llk_fm /= input.mcmc_nsamples();
       llk_sm /= input.mcmc_nsamples();
-      const double llk_var = llk_sm - llk_fm * llk_fm;
+      const long double llk_var = llk_sm - llk_fm * llk_fm;
       std::cout << "\t<log ML \u2245 "
 		<< (llk_fm - 0.5 * llk_var)
 		<< ">\n";
@@ -150,8 +150,11 @@ int main( const int argc, const char* argv[] ) {
       
       // Compute DIC
       model.beta( beta_fm );  model.sigma( sigma_fm );
-      const double dev = -2 * model.log_likelihood(data);
-      const double dic = dev + 4 * llk_var;
+      const long double dev =
+	static_cast<long double>( -2 * model.log_likelihood(data) );
+      const double peff = (-2 * llk_fm > dev) ?
+	(-dev - 2 * llk_fm) : (2 * llk_var);
+      const double dic  = dev + 2 * peff;
       std::cout << "\t<DIC = " << dic << ">\n" << std::endl;
       //
       ologs["_fit"] << "Summary,Value\n"
@@ -160,7 +163,7 @@ int main( const int argc, const char* argv[] ) {
 		    << "log Marg. Likelihood,"
 		    << (llk_fm - 0.5 * llk_var) << "\n"
 		    << "Deviance," << dev << "\n"
-		    << "Effective Parameters," << (2*llk_var) << "\n"
+		    << "Effective Parameters," << peff << "\n"
 		    << "MH-Rate," << alpha
 		    << std::endl;
     }
@@ -188,6 +191,10 @@ int main( const int argc, const char* argv[] ) {
     // 	  << ".dtseries.nii";
     //   gourd::write_matrix_to_cifti( beta_fm.col(j).eval(), ref, fss.str() );
     // }
+
+    //
+    model.profile( data );
+    //
     
   }
   catch ( const std::exception& ex ) {

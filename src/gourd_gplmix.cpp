@@ -19,7 +19,7 @@
 #include "gourd/data/gplm_full_data.hpp"
 
 #include "gourd/surface_gplmix_model.hpp"
-#include "gourd/loocv.hpp"
+// #include "gourd/loocv.hpp"
 
 // #ifdef GOURD_GPLMIX_NNGP_APPROX
 // #include "gourd/surface_gplmix_model3.hpp"
@@ -69,7 +69,7 @@ int main( const int argc, const char* argv[] ) {
      * functor (set variance parameter to 1). Otherwise, retain 
      * cov_ptr's input variance parameter
      */
-    cov_ptr->variance(1);
+    // cov_ptr->variance(1);
 #endif
     
     gourd::gplm_full_data<scalar_type> data(
@@ -98,7 +98,7 @@ int main( const int argc, const char* argv[] ) {
     gourd::output_log ologs( input.output_basename() );
     for ( int j = 0; j < data.x().cols(); j++ ) {
       std::ostringstream lss;
-      lss << "_beta" << std::setfill('0') << std::setw(3) << j;
+      lss << "_beta" << std::setfill('0') << std::setw(4) << j;
       logids[j] = lss.str();
       ologs.add_log( logids[j] );
     }
@@ -178,12 +178,12 @@ int main( const int argc, const char* argv[] ) {
     else {
       beta_fm = model.beta();
       // Compute LOOCV
-      const double cverr = gourd::loocv(data, model);
-      std::cout << "\t<LOOCV = " << cverr << ">\n" << std::endl;
+      // const double cverr = gourd::loocv(data, model);
+      // std::cout << "\t<LOOCV = " << cverr << ">\n" << std::endl;
       //
       ologs["_fit"] << "Summary,Value\n"
 		    << std::setprecision(6) << std::fixed
-		    << "LOOCV," << cverr << "\n"
+	// << "LOOCV," << cverr << "\n"
 		    << "Deviance,"
 		    << (-2 * model.log_likelihood(data))
 		    << std::endl;

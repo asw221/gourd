@@ -7,15 +7,20 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <Eigen/SparseCore>
 #include <Eigen/SVD>
 
-#include "abseil/coordinates.hpp"
 #include "gifti_io.h"
 #include "nifti2_io.h"
 
+#include "abseil/coordinates.hpp"
+#include "abseil/covariance_functors.hpp"
+
 #include "gourd/eigen_map_cifti.hpp"
 #include "gourd/gifti.hpp"
+#include "gourd/neighborhood_smooth.hpp"
 #include "gourd/nifti2.hpp"
+#include "gourd/options.hpp"
 #include "gourd/pair_cifti_metric_with_gifti_surface.hpp"
 #include "gourd/utilities/csv_reader.hpp"
 
@@ -25,8 +30,8 @@
 // #endif
 
 
-#ifndef _GOURD_GPLM_SSTAT_
-#define _GOURD_GPLM_SSTAT_
+#ifndef _GOURD_GPLM_SMOOTHED_SSTAT_
+#define _GOURD_GPLM_SMOOTHED_SSTAT_
 
 
 namespace gourd {
@@ -35,7 +40,7 @@ namespace gourd {
   /*! Sufficient statistics for gourd gaussian process regression 
    */
   template< typename T >
-  class gplm_sstat {
+  class gplm_smoothed_sstat {
   public:
     typedef T scalar_type;
     typedef typename abseil::cartesian_coordinate<3, T>
@@ -44,19 +49,25 @@ namespace gourd {
       vector_type;
     typedef typename Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>
       mat_type;
+    typedef typename Eigen::SparseMatrix<T> spmat_type;
 
     /*! (constructor) */
-    gplm_sstat() = default;
-    gplm_sstat(
+    gplm_smoothed_sstat() = default;
+
+    template< size_t D >
+    gplm_smoothed_sstat(
       const std::string xfile,
       const std::vector<std::string>& yfiles,
-      const std::string surf_file
+      const std::string surf_file,
+      const abseil::covariance_functor<T, D>* const cov,
+      const T sm_radius,
+      const gourd::dist_code distance
     );
 
-    // gplm_sstat( const gourd::gplm_full_data<T>& other );
+    // gplm_smoothed_sstat( const gourd::gplm_full_data<T>& other );
 
-    // gplm_sstat<T>& operator=( const gourd::gplm_full_data<T>& other );
-    // gplm_sstat<T>& operator=( const gourd::gplm_sstat<T>& other );
+    // gplm_smoothed_sstat<T>& operator=( const gourd::gplm_full_data<T>& other );
+    // gplm_smoothed_sstat<T>& operator=( const gourd::gplm_smoothed_sstat<T>& other );
 
     mat_type& yu_ref() ;
 
@@ -77,6 +88,7 @@ namespace gourd {
   protected:
     mat_type yu_;
     mat_type x_;
+    spmat_type sm_;
     vector_type yssq_;
 
     Eigen::BDCSVD<mat_type> xudv_;
@@ -99,7 +111,7 @@ namespace gourd {
       const int i
     );
   };
-  // class gplm_sstat
+  // class gplm_smoothed_sstat
   
 };
 // namespace gourd
@@ -108,110 +120,78 @@ namespace gourd {
 
 
 template< typename T >
-gourd::gplm_sstat<T>::gplm_sstat(
+template< size_t D >
+gourd::gplm_smoothed_sstat<T>::gplm_smoothed_sstat(
   const std::string xfile,
   const std::vector<std::string>& yfiles,
-  const std::string surf_file
+  const std::string surf_file,
+  const abseil::covariance_functor<T, D>* const cov,
+  const T sm_radius,
+  const gourd::dist_code distance
 ) {
   if ( yfiles.empty() ) {
-    throw std::domain_error("gplm_sstat: must provide outcome "
+    throw std::domain_error("gplm_smoothed_sstat: must provide outcome "
 			    "data files");
   }
   read_xfile_( xfile, yfiles );
   //
   ::gifti_image* surface = gourd::gifti::image_read( surf_file );
+  ::nifti_image* metric  = gourd::nifti2::image_read( yfiles[0] ); 
+  const gourd::cifti_gifti_pair cgp(metric, surface);
+  gourd::extract_coordinates( surface, cgp, coord_ );
+  ::nifti_image_free( metric );
+  //
+  sm_ = gourd::compute_nnsmooth_mat(coord_, cov, sm_radius, distance);
   stream_data_( yfiles, surface );
+  //
   ::gifti_free_image( surface );
 };
 
 
 
-// template< typename T >
-// gourd::gplm_sstat<T>::gplm_sstat(
-//   const gourd::gplm_full_data<T>& other
-// ) {
-//   x_ = other.x();
-//   yu_ = other.y() * other.xsvd_u();
-//   yssq_ = other.yssq();
-//   xudv_.compute(x_,
-//     Eigen::DecompositionOptions::ComputeThinU |
-//     Eigen::DecompositionOptions::ComputeThinV
-//   );
-//   coord_ = other.coordinates();
-// };
-
-
-// template< typename T >
-// gourd::gplm_sstat<T>& gourd::gplm_sstat<T>::operator=(
-//   const gourd::gplm_full_data<T>& other
-// ) {
-//   x_ = other.x();
-//   yu_ = other.y() * other.xsvd_u();
-//   yssq_ = other.yssq();
-//   xudv_.compute(x_,
-//     Eigen::DecompositionOptions::ComputeThinU |
-//     Eigen::DecompositionOptions::ComputeThinV
-//   );
-//   coord_ = other.coordinates();
-// };
-
-
-// template< typename T >
-// gourd::gplm_sstat<T>& gourd::gplm_sstat<T>::operator=(
-//   const gourd::gplm_sstat<T>& other
-// ) {
-//   x_ = other.x();
-//   yu_ = other.yu();
-//   yssq_ = other.yssq();
-//   xudv_.compute(x_,
-//     Eigen::DecompositionOptions::ComputeThinU |
-//     Eigen::DecompositionOptions::ComputeThinV
-//   );
-// };
-
 
 
 template< typename T >
-int gourd::gplm_sstat<T>::n() const {
+int gourd::gplm_smoothed_sstat<T>::n() const {
   return x_.rows();
 };
 
 
 template< typename T >
-int gourd::gplm_sstat<T>::nloc() const {
+int gourd::gplm_smoothed_sstat<T>::nloc() const {
   return yu_.rows();
 };
 
 
 template< typename T >
-int gourd::gplm_sstat<T>::p() const {
+int gourd::gplm_smoothed_sstat<T>::p() const {
   return x_.cols();
 };
 
 
 template< typename T >
-int gourd::gplm_sstat<T>::xrank() const {
+int gourd::gplm_smoothed_sstat<T>::xrank() const {
   return xudv_.rank();
 };
 
 
 template< typename T >
-typename gourd::gplm_sstat<T>::mat_type&
-gourd::gplm_sstat<T>::yu_ref() {
+typename gourd::gplm_smoothed_sstat<T>::mat_type&
+gourd::gplm_smoothed_sstat<T>::yu_ref() {
   return yu_;
 };
 
 
 template< typename T >
-const typename gourd::gplm_sstat<T>::mat_type&
-gourd::gplm_sstat<T>::yu()
+const typename gourd::gplm_smoothed_sstat<T>::mat_type&
+gourd::gplm_smoothed_sstat<T>::yu()
   const {
   return yu_;
 };
 
 template< typename T >
-const typename gourd::gplm_sstat<T>::mat_type&
-gourd::gplm_sstat<T>::x()
+const typename gourd::gplm_smoothed_sstat<T>::mat_type&
+gourd::gplm_smoothed_sstat<T>::x()
   const {
   return x_;
 };
@@ -219,47 +199,47 @@ gourd::gplm_sstat<T>::x()
 
 
 template< typename T >
-const typename gourd::gplm_sstat<T>::mat_type&
-gourd::gplm_sstat<T>::xsvd_u()
+const typename gourd::gplm_smoothed_sstat<T>::mat_type&
+gourd::gplm_smoothed_sstat<T>::xsvd_u()
   const {
   return xudv_.matrixU();
 };
 
 
 template< typename T >
-const typename gourd::gplm_sstat<T>::mat_type&
-gourd::gplm_sstat<T>::xsvd_v()
+const typename gourd::gplm_smoothed_sstat<T>::mat_type&
+gourd::gplm_smoothed_sstat<T>::xsvd_v()
   const {
   return xudv_.matrixV();
 };
 
 
 template< typename T >
-const typename gourd::gplm_sstat<T>::vector_type&
-gourd::gplm_sstat<T>::xsvd_d()
+const typename gourd::gplm_smoothed_sstat<T>::vector_type&
+gourd::gplm_smoothed_sstat<T>::xsvd_d()
   const {
   return xudv_.singularValues();
 };
 
 
 template< typename T >
-const typename gourd::gplm_sstat<T>::vector_type&
-gourd::gplm_sstat<T>::yssq()
+const typename gourd::gplm_smoothed_sstat<T>::vector_type&
+gourd::gplm_smoothed_sstat<T>::yssq()
   const {
   return yssq_;
 };
 
 
 template< typename T >
-const Eigen::BDCSVD<typename gourd::gplm_sstat<T>::mat_type>&
-gourd::gplm_sstat<T>::xsvd() const {
+const Eigen::BDCSVD<typename gourd::gplm_smoothed_sstat<T>::mat_type>&
+gourd::gplm_smoothed_sstat<T>::xsvd() const {
   return xudv_;
 };
 
 
 template< typename T >
-const std::vector<typename gourd::gplm_sstat<T>::coord_type>&
-gourd::gplm_sstat<T>::coordinates()
+const std::vector<typename gourd::gplm_smoothed_sstat<T>::coord_type>&
+gourd::gplm_smoothed_sstat<T>::coordinates()
   const {
   return coord_;
 };
@@ -267,7 +247,7 @@ gourd::gplm_sstat<T>::coordinates()
 
 
 template< typename T >
-void gourd::gplm_sstat<T>::read_xfile_(
+void gourd::gplm_smoothed_sstat<T>::read_xfile_(
   const std::string xfile,
   const std::vector<std::string>& yfiles
 ) {
@@ -284,7 +264,7 @@ void gourd::gplm_sstat<T>::read_xfile_(
 
 
 template< typename T >
-void gourd::gplm_sstat<T>::stream_data_(
+void gourd::gplm_smoothed_sstat<T>::stream_data_(
   const std::vector<std::string>& yfiles,
   ::gifti_image* surface
 ) {
@@ -329,16 +309,13 @@ void gourd::gplm_sstat<T>::stream_data_(
 
 
 template< typename T >
-void gourd::gplm_sstat<T>::process_images_(
+void gourd::gplm_smoothed_sstat<T>::process_images_(
   ::nifti_image* metric,
   ::gifti_image* surface,
   const int i
 ) {
   const gourd::cifti_gifti_pair cgp(metric, surface);
-  if ( coord_.empty() ) {
-    gourd::extract_coordinates( surface, cgp, coord_ );
-  }
-  const vector_type y = gourd::map_cifti_to_mat<T>(
+  const vector_type y = sm_ * gourd::map_cifti_to_mat<T>(
     metric,
     cgp.cifti_paired_indices().cbegin(),
     cgp.cifti_paired_indices().cend(),
@@ -353,4 +330,4 @@ void gourd::gplm_sstat<T>::process_images_(
 };
 
 
-#endif  // _GOURD_GPLM_SSTAT_
+#endif  // _GOURD_GPLM_SMOOTHED_SSTAT_

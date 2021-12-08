@@ -367,8 +367,6 @@ gourd::glm_command_parser::glm_command_parser(
 	}
       };
     }
-    // // Silently ignore theta[0]:
-    // theta_[0] = 1;
   }
   // if ( help_invoked() )
 

@@ -15,9 +15,9 @@
 #include "gourd/nifti2.hpp"
 #include "gourd/options.hpp"
 #include "gourd/output.hpp"
-#include "gourd/surface_smoothed_glm.hpp"
+#include "gourd/surface_vwise_glm.hpp"
 #include "gourd/cmd/glm_command_parser.hpp"
-#include "gourd/data/gplm_sstat.hpp"
+#include "gourd/data/gplm_smoothed_sstat.hpp"
 
 
 
@@ -31,7 +31,7 @@ int main( const int argc, const char* argv[] ) {
 #endif
   using cov_type = abseil::covariance_functor<scalar_type, 3>;
   using mat_type = typename
-    gourd::surface_smoothed_glm<scalar_type>::mat_type;
+    gourd::surface_vwise_glm<scalar_type>::mat_type;
   // using vec_type = typename
   //   gourd::surface_smoothed_glm<scalar_type>::vector_type;
 
@@ -54,30 +54,23 @@ int main( const int argc, const char* argv[] ) {
       input.theta().cend()
     );
     
-    gourd::gplm_sstat<scalar_type> data(
+    gourd::gplm_smoothed_sstat<scalar_type> data(
       input.covariate_file(),
       input.metric_files(),
-      input.surface_file()
-    );
-
-    // std::cout << "d = " << data.xsvd_d().adjoint() << "\n"
-    // 	      << "U = " << data.xsvd_u().topRows(6) << "\n"
-    // 	      << "V = " << data.xsvd_v() << "\n"
-    // 	      << std::endl;
-
-    gourd::surface_smoothed_glm model(
-      data,
+      input.surface_file(),
       cov_ptr.get(),
       input.neighborhood(),
       input.distance_metric()
     );
+
+    gourd::surface_vwise_glm model( data );
 
     // Setup outputs
     std::vector<std::string> logids( data.p() );
     gourd::output_log ologs( input.output_basename() );
     for ( int j = 0; j < data.p(); j++ ) {
       std::ostringstream lss;
-      lss << "beta" << std::setfill('0') << std::setw(4) << j;
+      lss << "_beta" << std::setfill('0') << std::setw(4) << j;
       logids[j] = lss.str();
       ologs.add_log( logids[j] );
     }
@@ -117,11 +110,11 @@ int main( const int argc, const char* argv[] ) {
     
     gourd::write_matrix_to_cifti(
       beta_fm, ref,
-      input.output_basename() + std::string("beta(s).dtseries.nii")
+      input.output_basename() + std::string("_beta(s).dtseries.nii")
     );
     gourd::write_matrix_to_cifti(
       (beta_sm - beta_fm.cwiseAbs2()).cwiseSqrt().eval(), ref,
-      input.output_basename() + std::string("se_beta(s).dtseries.nii")
+      input.output_basename() + std::string("_se_beta(s).dtseries.nii")
     );
     
   }
