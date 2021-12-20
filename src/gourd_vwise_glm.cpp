@@ -32,8 +32,8 @@ int main( const int argc, const char* argv[] ) {
   using cov_type = abseil::covariance_functor<scalar_type, 3>;
   using mat_type = typename
     gourd::surface_vwise_glm<scalar_type>::mat_type;
-  // using vec_type = typename
-  //   gourd::surface_smoothed_glm<scalar_type>::vector_type;
+  using vec_type = typename
+    gourd::surface_vwise_glm<scalar_type>::vector_type;
 
   gourd::glm_command_parser input( argc, argv );
   if ( !input )  return 1;
@@ -76,6 +76,7 @@ int main( const int argc, const char* argv[] ) {
     }
     mat_type beta_fm = mat_type::Zero( data.nloc(), data.p() );
     mat_type beta_sm = mat_type::Zero( data.nloc(), data.p() );
+    vec_type sigma_fm = vec_type::Zero( data.nloc() );
     //
 
     // Run MCMC
@@ -89,8 +90,9 @@ int main( const int argc, const char* argv[] ) {
       //
       if ( i % input.mcmc_thin() == 0 ) {
 	mat_type beta_t = model.beta();
-	beta_fm += beta_t;
-	beta_sm += beta_t.cwiseAbs2();
+	beta_fm.noalias() += beta_t;
+	beta_sm.noalias() += beta_t.cwiseAbs2();
+	sigma_fm.noalias() += model.sigma();
 	for ( int j = 0; j < beta_t.cols(); j++ ) {
 	  ologs.write(
             logids[j],
@@ -107,6 +109,7 @@ int main( const int argc, const char* argv[] ) {
     
     beta_fm /= input.mcmc_nsamples();
     beta_sm /= input.mcmc_nsamples();
+    sigma_fm /= input.mcmc_nsamples();
     
     gourd::write_matrix_to_cifti(
       beta_fm, ref,
@@ -115,6 +118,10 @@ int main( const int argc, const char* argv[] ) {
     gourd::write_matrix_to_cifti(
       (beta_sm - beta_fm.cwiseAbs2()).cwiseSqrt().eval(), ref,
       input.output_basename() + std::string("_se_beta(s).dtseries.nii")
+    );
+    gourd::write_matrix_to_cifti(
+      sigma_fm, ref,
+      input.output_basename() + std::string("_sigma(s).dtseries.nii")
     );
     
   }

@@ -109,9 +109,9 @@ int main( const int argc, const char* argv[] ) {
       //
       if ( i % input.mcmc_thin() == 0 ) {
 	mat_type beta_t = model.beta();
-	beta_fm += beta_t;
-	beta_sm += beta_t.cwiseAbs2();
-	sigma_fm += model.sigma();
+	beta_fm.noalias() += beta_t;
+	beta_sm.noalias() += beta_t.cwiseAbs2();
+	sigma_fm.noalias() += model.sigma();
 	for ( int j = 0; j < beta_t.cols(); j++ ) {
 	  ologs.write(
             logids[j],
