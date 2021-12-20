@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <random>
 
 // #include <omp.h>
@@ -15,6 +16,7 @@
 #include "abseil/math.hpp"
 #include "abseil/mcmc/learning_rate.hpp"
 
+#include "gourd/covariance.hpp"
 #include "gourd/nearest_neighbor_process.hpp"
 #include "gourd/options.hpp"
 #include "gourd/rng.hpp"
@@ -68,6 +70,7 @@ namespace gourd {
     typedef typename Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>
       mat_type;
     typedef typename Eigen::SparseMatrix<T> spmat_type;
+    using cov_type = abseil::covariance_functor<T, 3>;
 
     /*
      * Needs to construct:
@@ -600,7 +603,6 @@ void gourd::surface_gplmm_model<T>::set_initial_values(
   omega_ = mat_type::Zero( data.nloc(), data.n() );
   set_initial_sigma( data );
   set_initial_gamma( data );
-  // update_tau(); /* Must be called AFTER set_initial_gamma() */
   log_prior_kernel_gamma_ *= tau_sq_inv_;
   //
 #ifndef NDEBUG
@@ -861,17 +863,25 @@ gourd::surface_gplmm_model<T>::surface_gplmm_model(
   assert(mass_rad >= 0 &&
 	 "surface_gplmm_model: non-positive mass matrix neighborhood");
   //
+  // Make copy of cov
+  const typename cov_type::param_type theta0 = cov->param();
+  std::unique_ptr<cov_type> cov_copy;
+  gourd::init_cov(
+    cov_copy, gourd::get_cov_code(cov), theta0.cbegin(), theta0.cend()
+  );
+  tau_sq_inv_ = 1 / cov->variance();
+  cov_copy->variance(1);
   /* Set Hessian */
   c_inv_ = gourd::nnp_hess<T>(
     data.coordinates(),
-    cov,
+    cov_copy.get(),
     nngp_radius,
     distance
   );
   /* Set Mass matrix */
   mass_ = gourd::nnp_hess<T>(
     data.coordinates(),
-    cov,
+    cov_copy.get(),
     mass_rad,
     distance
   );
