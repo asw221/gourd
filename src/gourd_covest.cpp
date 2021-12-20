@@ -45,7 +45,7 @@ int main( const int argc, const char* argv[] ) {
       input.metric_files(),
       input.surface_file()
     );
-    data.center();
+    data.center();  // data.scale();
 
     gourd::sgpl::data_pack pack;
     pack.cov_ptr  = cov_ptr.get();

@@ -110,7 +110,7 @@ namespace gourd {
     const mat_type& beta() const;
 
     mat_type smdiag( const gourd::gplm_full_data<T>& data ) const;
-    /*<! Compute the diagonal of the smoothing/hat matrix */
+    /*<! Compute the diagonal of the smoothing/hat matrix. EXTREMELY slow */
     
     double log_likelihood(
       const gourd::gplm_full_data<T>& data

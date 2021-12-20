@@ -16,9 +16,9 @@
 #include "gourd/nifti2.hpp"
 #include "gourd/options.hpp"
 #include "gourd/output.hpp"
-#include "gourd/surface_gpl_model.hpp"
+#include "gourd/surface_gplmm_model.hpp"
 #include "gourd/cmd/glm_command_parser.hpp"
-#include "gourd/data/gplm_sstat.hpp"
+#include "gourd/data/gplm_full_data.hpp"
 
 
 
@@ -32,9 +32,9 @@ int main( const int argc, const char* argv[] ) {
 #endif
   using cov_type = abseil::covariance_functor<scalar_type, 3>;
   using mat_type = typename
-    gourd::surface_gpl_model<scalar_type>::mat_type;
+    gourd::surface_gplmm_model<scalar_type>::mat_type;
   using vec_type = typename
-    gourd::surface_gpl_model<scalar_type>::vector_type;
+    gourd::surface_gplmm_model<scalar_type>::vector_type;
 
   gourd::glm_command_parser input( argc, argv );
   if ( !input )  return 1;
@@ -54,12 +54,12 @@ int main( const int argc, const char* argv[] ) {
       input.theta().cbegin(),
       input.theta().cend()
     );
-    cov_ptr->variance(1);
     
-    gourd::gplm_sstat<scalar_type> data(
-      input.covariate_file(),
+    gourd::gplm_full_data<scalar_type> data(
       input.metric_files(),
-      input.surface_file()
+      input.surface_file(),
+      input.covariate_file(),
+      input.variance_component_indices()  // <- Unused ***
     );
 
     // std::cout << "d = " << data.xsvd_d().adjoint() << "\n"
@@ -67,7 +67,7 @@ int main( const int argc, const char* argv[] ) {
     // 	      << "V = " << data.xsvd_v() << "\n"
     // 	      << std::endl;
 
-    gourd::surface_gpl_model model(
+    gourd::surface_gplmm_model model(
       data,
       cov_ptr.get(),
       input.neighborhood(),
@@ -90,6 +90,7 @@ int main( const int argc, const char* argv[] ) {
     }
     ologs.add_log( "_etc" );
     ologs.add_log( "_fit" );
+    ologs.add_log( "_deviations" );
     mat_type beta_fm = mat_type::Zero( data.nloc(), data.p() );
     mat_type beta_sm = mat_type::Zero( data.nloc(), data.p() );
     vec_type sigma_fm = vec_type::Zero( data.nloc() );
@@ -97,37 +98,44 @@ int main( const int argc, const char* argv[] ) {
     abseil::kahan_accumulator<long double> llk_fm, llk_sm;
     //
 
-    // Run MCMC
-    std::cout << "Burnin:\n";
-    model.warmup( data, input.mcmc_burnin() );
-
-    std::cout << "\nSampling:\n";
-    double alpha = 0;
-    const int maxit = (input.mcmc_nsamples() - 1) * input.mcmc_thin() + 1;
-    for ( int i = 0; i < maxit; i++ ) {
-      alpha += model.update( data, i+1 );
-      //
-      if ( i % input.mcmc_thin() == 0 ) {
-	mat_type beta_t = model.beta();
-	beta_fm += beta_t;
-	beta_sm += beta_t.cwiseAbs2();
-	sigma_fm += model.sigma();
-	for ( int j = 0; j < beta_t.cols(); j++ ) {
-	  ologs.write(
-            logids[j],
-	    beta_t.data() + j * data.nloc(),
-	    beta_t.data() + (j+1) * data.nloc()
-          );
-	}
-	llk = static_cast<long double>( model.log_likelihood(data) );
-	llk_fm += llk;  llk_sm += (llk * llk);
-	ologs["_etc"] << std::setprecision(6) << std::fixed
-		      << llk << "," << model.xi() << "," << model.tau()
-		      << std::endl;
-      }
-    }
-
+    //
+    model.compute_map_estimate( data, input.optim_maxit(),
+				input.optim_xtol() );
+    data.subtract_from_y( model.omega() );
+    ologs["_deviations"] <<
+      model.omega().colwise().squaredNorm().adjoint() << std::endl;
+    //
     if ( input.mcmc_nsamples() > 0 ) {
+      // Run MCMC
+      std::cout << "Burnin:\n";
+      model.warmup( data, input.mcmc_burnin() );
+
+      std::cout << "\nSampling:\n";
+      double alpha = 0;
+      const int maxit = (input.mcmc_nsamples() - 1) * input.mcmc_thin() + 1;
+      for ( int i = 0; i < maxit; i++ ) {
+	alpha += model.update( data, i+1 );
+	//
+	if ( i % input.mcmc_thin() == 0 ) {
+	  mat_type beta_t = model.beta();
+	  beta_fm.noalias()  += beta_t;
+	  beta_sm.noalias()  += beta_t.cwiseAbs2();
+	  sigma_fm.noalias() += model.sigma();
+	  for ( int j = 0; j < beta_t.cols(); j++ ) {
+	    ologs.write(
+              logids[j],
+	      beta_t.data() + j * data.nloc(),
+	      beta_t.data() + (j+1) * data.nloc()
+            );
+	  }
+	  llk = static_cast<long double>( model.log_likelihood(data) );
+	  llk_fm += llk;  llk_sm += (llk * llk);
+	  ologs["_etc"] << std::setprecision(6) << std::fixed
+			<< llk << "," << model.xi() << "," << model.tau()
+			<< std::endl;
+	}
+      }
+
       //
       alpha /= maxit;
       std::cout << "\t<Avg. Metropolis Rate = "
@@ -169,6 +177,10 @@ int main( const int argc, const char* argv[] ) {
 		    << "MH-Rate," << alpha
 		    << std::endl;
     }
+    else {
+      beta_fm.noalias()  += model.beta();
+      sigma_fm.noalias() += model.sigma();
+    }
     
 
     // Write output images
@@ -180,19 +192,15 @@ int main( const int argc, const char* argv[] ) {
       input.output_basename() + std::string("_beta(s).dtseries.nii")
     );
     gourd::write_matrix_to_cifti(
-      (beta_sm - beta_fm.cwiseAbs2()).cwiseSqrt().eval(), ref,
-      input.output_basename() + std::string("_se_beta(s).dtseries.nii")
-    );
-    gourd::write_matrix_to_cifti(
       sigma_fm, ref,
       input.output_basename() + std::string("_sigma(s).dtseries.nii")
     );
-    // for ( int j = 0; j < beta_fm.cols(); j++ ) {
-    //   std::ostringstream fss;
-    //   fss << input.output_basename() << "betahat_" << j
-    // 	  << ".dtseries.nii";
-    //   gourd::write_matrix_to_cifti( beta_fm.col(j).eval(), ref, fss.str() );
-    // }
+    if ( input.mcmc_nsamples() > 0 ) {
+      gourd::write_matrix_to_cifti(
+        (beta_sm - beta_fm.cwiseAbs2()).cwiseSqrt().eval(), ref,
+	input.output_basename() + std::string("_se_beta(s).dtseries.nii")
+      );
+    }
 
     //
     model.profile( data );

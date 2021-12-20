@@ -33,9 +33,9 @@ int main( const int argc, const char* argv[] ) {
     std::vector< gourd::band<float> > cbs =
       gourd::get_file_credbands<>( input.logfile(), input.p() );
 
-    if ( refnim->nvox != (int64_t)cbs[0].size() ) {
+    if ( refnim->nvox < (int64_t)cbs[0].size() ) {
       throw std::domain_error(
-        "log-file/reference image dimension mismatch" );
+        "Reference image has fewer vertices than log-file" );
     }
 
     // Deep copy credible bands

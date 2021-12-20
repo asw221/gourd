@@ -59,6 +59,7 @@ namespace gourd {
     const std::vector<coord_type>& coordinates() const;
 
     void center(); /*!< Mean center outcome vectors */
+    void scale();  /*!< Divide outcomes by their empirical SD */
 
   protected:
     mat_type y_;
@@ -177,6 +178,19 @@ void gourd::gplm_outcome_data<T>::center() {
 };
 
 
+template< typename T >
+void gourd::gplm_outcome_data<T>::scale() {
+  const vector_type sd =
+    ( y_.cwiseAbs2().colwise().mean() -
+      y_.colwise().mean().cwiseAbs2() ).cwiseSqrt();
+  for ( int j = 0; j < y_.cols(); j++ ) {
+    for ( int i = 0; i < y_.rows(); i++ )
+      y_.coeffRef(i, j) /= sd.coeffRef(j);
+  }
+};
+
+
+
 
 
 template< typename T >
@@ -235,7 +249,7 @@ void gourd::gplm_outcome_data<T>::process_images_(
     cgp.cifti_array_dim()
   );
   y_.col(i) = yi;
-  yssq_ += yi.cwiseAbs2();
+  yssq_.noalias() += yi.cwiseAbs2();
 };
 
 

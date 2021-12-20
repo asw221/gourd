@@ -18,28 +18,28 @@
 namespace num {
 
   template< typename T > inline constexpr
-  T e_v     = 2.718281828459045235360287471352662498;  /*!< e */
+  T e_v     = 2.718281828459045235360287471352662498L;  /*!< e */
 
   template< typename T > inline constexpr
-  T inv_pi_v = 0.318309886183790671537767526745028724; /*!< 1/pi */
+  T inv_pi_v = 0.318309886183790671537767526745028724L; /*!< 1/pi */
 
   template< typename T > inline constexpr
-  T inv_sqrt2_v   = 0.707106781186547524400844362104849039;  /*!< 1/sqrt(2) */
+  T inv_sqrt2_v   = 0.707106781186547524400844362104849039L;  /*!< 1/sqrt(2) */
   
   template< typename T > inline constexpr
-  T inv_sqrt2pi_v = 0.398942280401432677939946059934381868;  /*!< 1/sqrt(2 * pi) */
+  T inv_sqrt2pi_v = 0.398942280401432677939946059934381868L;  /*!< 1/sqrt(2 * pi) */
 
   template< typename T > inline constexpr
-  T inv_sqrtpi_v  = 0.564189583547756286948079451560772586;  /*!< 1/sqrt(pi) */
+  T inv_sqrtpi_v  = 0.564189583547756286948079451560772586L;  /*!< 1/sqrt(pi) */
     
   template< typename T > inline constexpr
-  T ln2_v   = 0.693147180559945309417232121458176568;  /*!< log(2) */
+  T ln2_v   = 0.693147180559945309417232121458176568L;  /*!< log(2) */
     
   template< typename T > inline constexpr
-  T pi_v    = 3.141592653589793238462643383279502884;  /*!< pi */
+  T pi_v    = 3.141592653589793238462643383279502884L;  /*!< pi */
 
   template< typename T > inline constexpr
-  T sqrt2_v = 1.414213562373095048801688724209698079;  /*!< sqrt(2) */
+  T sqrt2_v = 1.414213562373095048801688724209698079L;  /*!< sqrt(2) */
     
 };
 

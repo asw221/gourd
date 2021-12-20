@@ -46,6 +46,8 @@ namespace gourd {
 
     const gourd::ragged_array<int>& varcomp_indices() const;
 
+    void subtract_from_y( const mat_type& z );
+
   private:
     mat_type x_;
     mat_type yu_;
@@ -179,6 +181,27 @@ bool gourd::gplm_full_data<T>::validate_indices_() const {
     } 
   }
   return ok;
+};
+
+
+
+template< typename T >
+void gourd::gplm_full_data<T>::subtract_from_y(
+  const typename gourd::gplm_full_data<T>::mat_type& z
+) {
+  if ( z.rows() != this->y_.rows() ) {
+    throw std::domain_error( "gplm_full_data::subtract_from_y : "
+			     "adjustment dimension mismatch" );
+  }
+  if ( z.cols() != this->y_.cols() ) {
+    throw std::domain_error( "gplm_full_data::subtract_from_y : "
+			     "adjustment rank mismatch" );
+  }
+  for ( int j = 0; j < this->y_.cols(); j++ ) {
+    this->y_.col(j).noalias() -= z.col(j);
+  }
+  this->yu_ = this->y_ * xudv_.matrixU();
+  this->yssq_ = this->y_.rowwise().squaredNorm();
 };
 
 

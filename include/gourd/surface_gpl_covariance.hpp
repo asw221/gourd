@@ -155,7 +155,7 @@ gourd::sgpl::optimize_cov_params(
   const int npar = d.cov_ptr->param().size();
   /* Interpolation conditions */
   const int npt = (n + 1) * (n + 2) / 2;
-  /* Size of working space */
+  /* Minimum size of working space */
   const int nw = (npt + 5) * (npt + n) + 3 * n * (n + 5) / 2;
   /* Parameter & bounds */
   std::vector<double> x(npar);

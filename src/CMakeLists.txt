@@ -72,16 +72,17 @@ target_link_libraries(gourd_gplmix
 		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
 
 
-## --- gourd_gplmixap ------------------------------------------------
-add_executable(gourd_gplmixap gourd_gplmix.cpp cifti_xml.cpp)
-set_target_properties(gourd_gplmixap PROPERTIES
+
+## --- gourd_gplmmm --------------------------------------------------
+add_executable(gourd_gplmmm gourd_gplmmm.cpp cifti_xml.cpp)
+set_target_properties(gourd_gplmmm PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
-target_link_libraries(gourd_gplmixap
-		OPTIM::bobyqa
+target_link_libraries(gourd_gplmmm
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
-target_compile_definitions(gourd_gplmixap
-		PUBLIC GOURD_GPLMIX_NNGP_APPROX)
+
+
+
 
 
 ## --- gourd_sglm ----------------------------------------------------
@@ -118,3 +119,13 @@ target_link_libraries(gourd_vwise_glm
 # ## EIGEN_DONT_VECTORIZE
 
 
+## ## --- gourd_gplmixap ------------------------------------------------
+## add_executable(gourd_gplmixap gourd_gplmix.cpp cifti_xml.cpp)
+## set_target_properties(gourd_gplmixap PROPERTIES
+## 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
+## target_link_libraries(gourd_gplmixap
+## 		OPTIM::bobyqa
+## 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
+## 		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+## target_compile_definitions(gourd_gplmixap
+## 		PUBLIC GOURD_GPLMIX_NNGP_APPROX)
