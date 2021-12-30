@@ -35,12 +35,12 @@ set_target_properties(hello_gourd PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 		"${CMAKE_BINARY_DIR}/../bin")
 
 ## --- gourd_credband ------------------------------------------------
-add_executable(gourd_credband gourd_credband.cpp)
+add_executable(gourd_credband gourd_credband.cpp cifti_xml.cpp)
 set_target_properties(gourd_credband PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_credband
-		NIFTI::cifti NIFTI::nifti2 EXPAT::EXPAT ZLIB::ZLIB
-		Eigen3::Eigen)
+		NIFTI::cifti NIFTI::nifti2 NIFTI::gifti
+		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
 
 
 ## --- gourd_covest --------------------------------------------------

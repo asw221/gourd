@@ -16,6 +16,8 @@
 #include "nifti1.h"
 
 #include "gourd/cifti_xml.hpp"
+#include "gourd/gifti.hpp"
+#include "gourd/nifti2.hpp"
 
 
 #ifndef _GOURD_PAIR_CIFTI_METRIC_WITH_GIFTI_SURFACE_
@@ -59,6 +61,7 @@ namespace gourd {
       ::gifti_image* gim,
       const bool print_img_intent = false
     );
+
 
     operator bool() const;
     bool operator!() const;
@@ -106,6 +109,7 @@ namespace gourd {
 	      << std::endl;
   };
   
+
   /* 
    *   - Will try to not throw
    *   - Default to LEFT hemisphere and 0 dimensions
@@ -113,10 +117,13 @@ namespace gourd {
    *     pre-screened for boarding
    */
   gourd::cifti_gifti_pair pair_cifti_with_gifti(
-    ::nifti_image* cim,
-    ::gifti_image* gim
+    const std::string& cfile,
+    const std::string& gfile
   );
-
+  // gourd::cifti_gifti_pair pair_cifti_with_gifti(
+  //   ::nifti_image* cim,
+  //   ::gifti_image* gim
+  // );
 
 
   gourd::gifti_info gifti_parse_meta_anat( ::gifti_image* gim );
@@ -160,6 +167,18 @@ namespace gourd {
 
 
 
+
+gourd::cifti_gifti_pair gourd::pair_cifti_with_gifti(
+    const std::string& cfile,
+    const std::string& gfile
+						     ) {
+  ::nifti_image* nim = gourd::nifti2::image_read( cfile );
+  ::gifti_image* gim = gourd::gifti::image_read( cfile );
+  gourd::cifti_gifti_pair cgp( nim, gim );
+  ::nifti_image_free( nim );
+  ::gifti_free_image( gim );
+  return cgp;
+};
 
 
 

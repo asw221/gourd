@@ -35,12 +35,14 @@ namespace gourd {
       const float scale = 100
     ) const;
     std::string reference_image() const;
+    std::string surface_image() const;
     
     const std::vector<float>& p() const;
 
   private:
     std::string logfile_;
     std::string ref_img_;
+    std::string surf_img_;
     std::vector<float> p_;
   };
   
@@ -54,6 +56,7 @@ void gourd::credband_command_parser::show_help() const {
   show_usage();
   std::cerr << "Options\n"
 	    << "  --reference  file/path  REQUIRED. CIFTI format reference image \n"
+	    << "  --surface    file/path  Optional. Guide output format \n"
 	    << "  --width      p1 p2 ...  Credible band widths on [0, 1]\n"
 	    << "\n"
 	    << "  -w   | -p    p1 p2 ...  Aliases for --width\n"
@@ -93,6 +96,10 @@ gourd::credband_command_parser::credband_command_parser(
       else if ( arg == "--reference" || arg == "-ref"
 		|| arg == "-r" ) {
 	this->process_file_argument( argc, argv, i, ref_img_ );
+      }
+      else if ( arg == "--surface" || arg == "-surf"
+		|| arg == "-s" ) {
+	this->process_file_argument( argc, argv, i, surf_img_ );
       }
       else if ( arg == "--width" || arg == "-p" || arg == "-w" ) {
 	this->process_vector_argument( argc, argv, i, p_ );
@@ -177,5 +184,8 @@ std::string gourd::credband_command_parser::reference_image() const {
   return ref_img_;
 };
 
+std::string gourd::credband_command_parser::surface_image() const {
+  return surf_img_;
+};
 
 #endif  // _GOURD_CREDBAND_COMMAND_PARSER_

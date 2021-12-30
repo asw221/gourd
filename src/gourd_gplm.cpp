@@ -16,6 +16,7 @@
 #include "gourd/nifti2.hpp"
 #include "gourd/options.hpp"
 #include "gourd/output.hpp"
+#include "gourd/pair_cifti_metric_with_gifti_surface.hpp"
 #include "gourd/surface_gpl_model.hpp"
 #include "gourd/cmd/glm_command_parser.hpp"
 #include "gourd/data/gplm_sstat.hpp"
@@ -59,6 +60,11 @@ int main( const int argc, const char* argv[] ) {
     gourd::gplm_sstat<scalar_type> data(
       input.covariate_file(),
       input.metric_files(),
+      input.surface_file()
+    );
+
+    gourd::cifti_gifti_pair cgp = gourd::pair_cifti_with_gifti(
+      input.metric_files()[0],
       input.surface_file()
     );
 
@@ -176,15 +182,15 @@ int main( const int argc, const char* argv[] ) {
 	gourd::nifti2::image_read( input.metric_files()[0], 0 );
     
     gourd::write_matrix_to_cifti(
-      beta_fm, ref,
+      beta_fm, ref, cgp,
       input.output_basename() + std::string("_beta(s).dtseries.nii")
     );
     gourd::write_matrix_to_cifti(
-      (beta_sm - beta_fm.cwiseAbs2()).cwiseSqrt().eval(), ref,
+      (beta_sm - beta_fm.cwiseAbs2()).cwiseSqrt().eval(), ref, cgp,
       input.output_basename() + std::string("_se_beta(s).dtseries.nii")
     );
     gourd::write_matrix_to_cifti(
-      sigma_fm, ref,
+      sigma_fm, ref, cgp,
       input.output_basename() + std::string("_sigma(s).dtseries.nii")
     );
     // for ( int j = 0; j < beta_fm.cols(); j++ ) {

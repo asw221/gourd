@@ -5,6 +5,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -57,7 +58,7 @@ namespace gourd {
 	    int _opts, int _maxr, int _maxc >
   ::nifti_image* matrix_to_cifti(
     const Eigen::Matrix<T, _rows,_cols,_opts,_maxr,_maxc>& mat,
-    ::nifti_image* const ref,
+    ::nifti_image* ref,  // Not modified
     const gourd::cifti_gifti_pair& cgp
   );
 
@@ -81,6 +82,17 @@ namespace gourd {
     ::nifti_image* ref,
     const std::string& fname
   );
+
+
+  template< typename T, int _rows, int _cols,
+	    int _opts, int _maxr, int _maxc >
+  bool write_matrix_to_cifti(
+    const Eigen::Matrix<T, _rows,_cols,_opts,_maxr,_maxc>& mat,
+    ::nifti_image* ref,
+    const gourd::cifti_gifti_pair& cgp,
+    const std::string& fname
+  );
+  
   
   
 }
@@ -116,11 +128,37 @@ template< typename T, int _rows, int _cols,
 
 
 
+// template< typename T, int _rows, int _cols,
+// 	  int _opts, int _maxr, int _maxc >
+// ::nifti_image* gourd::matrix_to_cifti(
+//   const Eigen::Matrix<T, _rows,_cols,_opts,_maxr,_maxc>& mat,
+//   ::nifti_image* const ref,
+//   const gourd::cifti_gifti_pair& cgp
+// ) {
+//   assert( ::nifti_looks_like_cifti(ref) &&
+//     "matrix_to_cifti: reference image not in CIFTI format" );
+//   namespace nii = gourd::nifti2;
+//   const int n = mat.rows(), m = mat.cols();
+//   ::nifti_image* outnim = nii::create_cifti(
+//     m, n, nii::intent::estimate, nii::data_t<T> );
+//   nii::replace_cifti_extension(
+//     outnim, gourd::simplified_extension(ref, cgp) );
+//   T* const data_ptr = static_cast<T*>( outnim->data );
+//   for ( int i = 0; i < n; i++ ) {
+//     int stride = i * m;
+//     for ( int j = 0; j < m; j++, stride++ )
+//       *(data_ptr + stride) = mat.coeffRef(i, j);
+//   }
+//   return outnim;
+// };
+
+
+
 template< typename T, int _rows, int _cols,
 	  int _opts, int _maxr, int _maxc >
 ::nifti_image* gourd::matrix_to_cifti(
   const Eigen::Matrix<T, _rows,_cols,_opts,_maxr,_maxc>& mat,
-  ::nifti_image* const ref,
+  ::nifti_image* ref,
   const gourd::cifti_gifti_pair& cgp
 ) {
   assert( ::nifti_looks_like_cifti(ref) &&
@@ -128,17 +166,19 @@ template< typename T, int _rows, int _cols,
   namespace nii = gourd::nifti2;
   const int n = mat.rows(), m = mat.cols();
   ::nifti_image* outnim = nii::create_cifti(
-    m, n, nii::intent::estimate, nii::data_t<T> );
+  ref, m, nii::intent::estimate, nii::data_t<T> );
   nii::replace_cifti_extension(
     outnim, gourd::simplified_extension(ref, cgp) );
   T* const data_ptr = static_cast<T*>( outnim->data );
+  const std::vector<int>& ind = cgp.cifti_paired_indices();
   for ( int i = 0; i < n; i++ ) {
-    int stride = i * m;
+    int stride = ind[i] * m;
     for ( int j = 0; j < m; j++, stride++ )
       *(data_ptr + stride) = mat.coeffRef(i, j);
   }
   return outnim;
 };
+
 
 
 
@@ -173,6 +213,28 @@ bool gourd::write_matrix_to_cifti(
   bool success = true;
   try {
     ::nifti_image* nim = gourd::matrix_to_cifti( mat, ref );
+    gourd::nifti2::image_write( nim, fname );
+    ::nifti_image_free( nim );
+  }
+  catch ( ... ) {
+    success = false;
+  }
+  return success;
+};
+
+
+
+template< typename T, int _rows, int _cols,
+	  int _opts, int _maxr, int _maxc >
+bool gourd::write_matrix_to_cifti(
+  const Eigen::Matrix<T, _rows,_cols,_opts,_maxr,_maxc>& mat,
+  ::nifti_image* ref,
+  const gourd::cifti_gifti_pair& cgp,
+  const std::string& fname
+) {
+  bool success = true;
+  try {
+    ::nifti_image* nim = gourd::matrix_to_cifti( mat, ref, cgp );
     gourd::nifti2::image_write( nim, fname );
     ::nifti_image_free( nim );
   }

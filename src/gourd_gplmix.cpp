@@ -15,6 +15,7 @@
 #include "gourd/nifti2.hpp"
 #include "gourd/options.hpp"
 #include "gourd/output.hpp"
+#include "gourd/pair_cifti_metric_with_gifti_surface.hpp"
 #include "gourd/cmd/glm_command_parser.hpp"
 #include "gourd/data/gplm_full_data.hpp"
 
@@ -79,6 +80,10 @@ int main( const int argc, const char* argv[] ) {
       input.variance_component_indices()
     );
 
+    gourd::cifti_gifti_pair cgp = gourd::pair_cifti_with_gifti(
+      input.metric_files()[0],
+      input.surface_file()
+    );
 
     gourd::surface_gplmix_model model(
       data,
@@ -195,7 +200,7 @@ int main( const int argc, const char* argv[] ) {
 	gourd::nifti2::image_read( input.metric_files()[0], 0 );
     
     gourd::write_matrix_to_cifti(
-      beta_fm, ref,
+      beta_fm, ref, cgp,
       input.output_basename() + std::string("_beta(s).dtseries.nii")
     );
 
@@ -204,7 +209,7 @@ int main( const int argc, const char* argv[] ) {
        * MCMC samples
        */
       gourd::write_matrix_to_cifti(
-        (beta_sm - beta_fm.cwiseAbs2()).cwiseSqrt().eval(), ref,
+        (beta_sm - beta_fm.cwiseAbs2()).cwiseSqrt().eval(), ref, cgp,
 	input.output_basename() + std::string("_se_beta(s).dtseries.nii")
       );
     }

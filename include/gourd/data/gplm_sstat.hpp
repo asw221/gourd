@@ -80,7 +80,6 @@ namespace gourd {
     vector_type yssq_;
 
     Eigen::BDCSVD<mat_type> xudv_;
-
     std::vector<coord_type> coord_;
 
     void read_xfile_(

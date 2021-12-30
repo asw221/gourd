@@ -3,12 +3,15 @@
 #include <stdexcept>
 #include <vector>
 
+#include "gifti_io.h"
 #include "nifti2_io.h"
 
 #include "ansi.hpp"
 
+#include "gourd/gifti.hpp"
 #include "gourd/credible_band.hpp"
 #include "gourd/nifti2.hpp"
+#include "gourd/pair_cifti_metric_with_gifti_surface.hpp"
 #include "gourd/cmd/credband_command_parser.hpp"
 
 
@@ -27,13 +30,25 @@ int main( const int argc, const char* argv[] ) {
 
     ::nifti_image* refnim =
       gourd::nifti2::image_read( input.reference_image(), 0 );
+    
+    ::gifti_image* shape =
+	gourd::gifti::image_read( input.surface_image() );
+
+    gourd::cifti_gifti_pair cgp( refnim, shape );
+    const std::vector<int>& ind = cgp.cifti_paired_indices();
+    // int range[2] = { ind[0], ind[0] };
+    // for ( int j : ind ) {
+    //   range[0] = (range[0] < j) ? range[0] : j;
+    //   range[1] = (range[1] < j) ? j : range[1];
+    // }
 
     ::nifti_image* outnim = gourd::nifti2::create_cifti( refnim, 2 );
 
     std::vector< gourd::band<float> > cbs =
       gourd::get_file_credbands<>( input.logfile(), input.p() );
 
-    if ( refnim->nvox < (int64_t)cbs[0].size() ) {
+    if ( ind.size() < (size_t)cbs[0].size() ) {
+      // if ( refnim->nvox < (int64_t)cbs[0].size() ) {
       throw std::domain_error(
         "Reference image has fewer vertices than log-file" );
     }
@@ -43,7 +58,8 @@ int main( const int argc, const char* argv[] ) {
     float* const data_ptr = static_cast<float*>( outnim->data );
     for ( const gourd::band<float>& band : cbs ) {
       for ( size_t i = 0; i < band.size(); i++ ) {
-	int stride = i * 2;
+	// int stride = i * 2;
+	int stride = ind[i] * 2;
 	*(data_ptr + stride) = band.lower[i];
 	*(data_ptr + stride + 1) = band.upper[i];
       }
