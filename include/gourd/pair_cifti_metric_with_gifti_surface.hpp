@@ -44,6 +44,15 @@ namespace gourd {
       geom_type(other.geom_type),
       topo_type(other.topo_type)
     { ; }
+
+    gifti_info& operator=( const gifti_info& other ) {
+      index = other.index;
+      vertices = other.vertices;
+      structure = other.structure;
+      geom_type = other.geom_type;
+      topo_type = other.topo_type;
+      return *this;
+    };
   };
 
   
@@ -65,6 +74,7 @@ namespace gourd {
 
     operator bool() const;
     bool operator!() const;
+    cifti_gifti_pair& operator=( const cifti_gifti_pair& other );
 
     const cifti_indices&    brain_model() const;
     const std::vector<int>& cifti_paired_indices() const;
@@ -432,6 +442,19 @@ gourd::cifti_gifti_pair::operator bool() const  {
 
 bool gourd::cifti_gifti_pair::operator!() const {
   return !this->operator bool();
+};
+
+
+gourd::cifti_gifti_pair& gourd::cifti_gifti_pair::operator=(
+  const gourd::cifti_gifti_pair& other
+) {
+  paired_ = other.paired_;
+  cifti_array_dim_ = other.cifti_array_dim_;
+  brain_mod_index_ = other.brain_mod_index_;
+  cim_info_ = other.cim_info_;
+  gim_info_ = other.gim_info_;
+  paired_cifti_indices_ = other.paired_cifti_indices_;
+  return *this;
 };
 
 

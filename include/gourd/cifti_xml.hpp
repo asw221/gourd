@@ -19,6 +19,13 @@ namespace gourd {
     std::vector<int> VolumeDimensions;
     std::vector<gourd::cifti_indices> BrainModel;
     std::vector<gourd::cifti_dim_info> MatrixIndicesMap;
+
+    cifti_info& operator=( const cifti_info& other ) {
+      VolumeDimensions = other.VolumeDimensions;
+      BrainModel = other.BrainModel;
+      MatrixIndicesMap = other.MatrixIndicesMap;
+      return *this;
+    };
   };
 
 
@@ -39,6 +46,17 @@ namespace gourd {
       IndexCount(0), IndexOffset(0), SurfaceNumberOfVertices(0),
       AppliesToMatrixDimension(0)
     { ; }
+
+    cifti_indices& operator=( const cifti_indices& other ) {
+      IndexCount = other.IndexCount;
+      IndexOffset = other.IndexOffset;
+      SurfaceNumberOfVertices = other.SurfaceNumberOfVertices;
+      AppliesToMatrixDimension = other.AppliesToMatrixDimension;
+      BrainStructure = other.BrainStructure;
+      ModelType = other.ModelType;
+      ind = other.ind;
+      return *this;
+    };
   };
 
 
@@ -54,6 +72,16 @@ namespace gourd {
       SeriesStart(0), SeriesStep(0),
       AppliesToMatrixDimension(0), NumberOfSeriesPoints(0)
     { ; }
+
+    cifti_dim_info& operator=( const cifti_dim_info& other ) {
+      SeriesStart = other.SeriesStart;
+      SeriesStep = other.SeriesStep;
+      AppliesToMatrixDimension = other.AppliesToMatrixDimension;
+      NumberOfSeriesPoints = other.NumberOfSeriesPoints;
+      IndicesMapToDataType = other.IndicesMapToDataType;
+      SeriesUnit = other.SeriesUnit;
+      return *this;
+    };
   };
 
 
