@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <string>
 
 #include "nifti2_io.h"
 #include "afni_xml_io.h"
@@ -29,6 +30,10 @@ int main ( int argc, char * argv[] ) {
     ::afni_xml_t* ext = ::axio_cifti_from_ext( nim );
     gourd::display_cifti_xml( ext );
     ::axml_free_xml_t( ext );
+
+    if ( argc > 2 && std::string(argv[2]) == "-ext" ) {
+      std::cout << "\n" << nim->ext_list->edata << "\n" << std::endl;
+    }
     
   }
 

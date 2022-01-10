@@ -179,8 +179,8 @@ namespace gourd {
 
 
 gourd::cifti_gifti_pair gourd::pair_cifti_with_gifti(
-    const std::string& cfile,
-    const std::string& gfile
+  const std::string& cfile,
+  const std::string& gfile
 ) {
   ::nifti_image* nim = gourd::nifti2::image_read( cfile );
   ::gifti_image* gim = gourd::gifti::image_read( gfile );

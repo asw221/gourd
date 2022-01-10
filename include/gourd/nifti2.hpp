@@ -270,7 +270,7 @@ void gourd::nifti2::image_write(
 			    "match expected CIFTI form");
   }
   std::array<int64_t, 8> dims = gourd::nifti2::dim(src);
-  dims[5] = nu;
+  dims[ 5 ] = nu;
   ::nifti_image* nim = ::nifti_make_new_nim(dims.data(), dtype, 1);
   nim->intent_code = static_cast<int>(ic);
   if ( src->num_ext > 0 && src->ext_list ) {

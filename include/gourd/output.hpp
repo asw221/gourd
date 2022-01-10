@@ -164,15 +164,20 @@ template< typename T, int _rows, int _cols,
   assert( ::nifti_looks_like_cifti(ref) &&
     "matrix_to_cifti: reference image not in CIFTI format" );
   namespace nii = gourd::nifti2;
-  const int n = mat.rows(), m = mat.cols();
+  const int n = mat.rows();
+  const int m = mat.cols();
   ::nifti_image* outnim = nii::create_cifti(
   ref, m, nii::intent::estimate, nii::data_t<T> );
-  nii::replace_cifti_extension(
-    outnim, gourd::simplified_extension(ref, cgp) );
+  // nii::replace_cifti_extension(
+  //   outnim, gourd::simplified_extension(ref, cgp) );
+  // nii::replace_cifti_extension(  // Better than ^^
+  //   outnim, gourd::simplified_extension(outnim, cgp) );
+  const int offset = cgp.brain_model().IndexOffset;
   T* const data_ptr = static_cast<T*>( outnim->data );
-  const std::vector<int>& ind = cgp.cifti_paired_indices();
+  // const std::vector<int>& ind = cgp.cifti_paired_indices();
   for ( int i = 0; i < n; i++ ) {
-    int stride = ind[i] * m;
+    // int stride = i * m;
+    int stride = (i + offset) * m;
     for ( int j = 0; j < m; j++, stride++ )
       *(data_ptr + stride) = mat.coeffRef(i, j);
   }

@@ -17,7 +17,7 @@
 #include "gourd/options.hpp"
 #include "gourd/output.hpp"
 #include "gourd/pair_cifti_metric_with_gifti_surface.hpp"
-#include "gourd/surface_gpl_model.hpp"
+#include "gourd/surface_gpl_model2.hpp"  // <- ***
 #include "gourd/cmd/glm_command_parser.hpp"
 #include "gourd/data/gplm_sstat.hpp"
 
@@ -31,7 +31,7 @@ int main( const int argc, const char* argv[] ) {
 #else
   typedef double scalar_type;
 #endif
-  using cov_type = abseil::covariance_functor<scalar_type, 3>;
+  using cov_type = abseil::covariance_functor<scalar_type, 3>;  // *
   using mat_type = typename
     gourd::surface_gpl_model<scalar_type>::mat_type;
   using vec_type = typename
