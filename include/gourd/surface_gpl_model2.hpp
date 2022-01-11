@@ -175,6 +175,8 @@ namespace gourd {
     
     void sample_momentum_and_energy();
 
+    void set_lpkg_proto();
+
     void set_initial_gamma(
       const gourd::gplm_sstat<T>& data
     );
@@ -377,18 +379,19 @@ double gourd::surface_gpl_model<T>::update_gamma_hmc(
     log_prior_star;
   alpha = std::exp( -energy_proposal_ - potential_energy() +
 		    energy_initial_ + energy_momentum_ );
-  // std::cout << "Proposal:  " << energy_proposal_ << "\n"
-  // 	    << "Potential: " << potential_energy() << "\n"
-  // 	    << "Initial:   " << energy_initial_ << "\n"
-  // 	    << "Momentum:  " << energy_momentum_ << "\n"
-  // 	    << std::endl;
+#ifndef NDEBUG
+  //
+  std::cout << "Proposal:  " << energy_proposal_ << "\n"
+  	    << "Potential: " << potential_energy() << "\n"
+  	    << "Initial:   " << energy_initial_ << "\n"
+  	    << "Momentum:  " << energy_momentum_ << "\n"
+  	    << std::endl;
+#endif
   alpha = isnan(alpha) ? 0 : alpha;
   if ( update  &&  unif(gourd::urng()) < alpha ) {
     gamma_ = gamma_star_;
     log_prior_kernel_gamma_ = log_prior_star;
-    for ( int j = 0; j < gamma_.cols(); j++ ) {
-      lpkg_proto_.coeffRef(j) = c_inv_.qf( gamma_.col(j) );
-    }
+    set_lpkg_proto();
   }
   return (alpha > 1) ? 1 : alpha;
 };
@@ -490,6 +493,11 @@ double gourd::surface_gpl_model<T>::potential_energy() const {
 };
 
 
+
+template< typename T > inline
+void gourd::surface_gpl_model<T>::set_lpkg_proto() {
+  lpkg_proto_ = c_inv_.hprod( gamma_ * vt_ ).colwise().squaredNorm();
+};
 
 
 
@@ -598,9 +606,7 @@ void gourd::surface_gpl_model<T>::set_initial_gamma(
   gamma_star_.resize( gamma_.rows(), gamma_.cols() );
   momentum_.resize( gamma_.rows(), gamma_.cols() );
   //
-  for ( int j = 0; j < gamma_.cols(); j++ ) {
-    lpkg_proto_.coeffRef(j) = c_inv_.qf( gamma_.col(j) );
-  }
+  set_lpkg_proto();
   log_prior_kernel_gamma_ = partial_logprior(gamma_);
   // energy_initial_ = partial_loglik( data, gamma_ ) +
   //   log_prior_kernel_gamma_;
