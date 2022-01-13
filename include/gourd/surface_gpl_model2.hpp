@@ -432,7 +432,7 @@ void gourd::surface_gpl_model<T>::update_tau() {
   const int s = gamma_.rows();
   const int p = gamma_.cols();
   const T shape = 0.5 * s * p + 1;
-  const T rate = -log_prior_kernel_gamma_ / tau_sq_inv_ + 1;
+  const T rate = -log_prior_kernel_gamma_ / tau_sq_inv_ + 0.5;
   std::gamma_distribution<T> gam( shape, 1 / rate );
   const T draw = gam(gourd::urng());
   //
@@ -447,7 +447,7 @@ void gourd::surface_gpl_model<T>::update_zeta() {
   const int s = gamma_.rows();
   const T shape = 0.5 * s + 1;
   for ( int j = 0; j < zeta_sq_inv_.size(); j++ ) {
-    T rate = 0.5 * tau_sq_inv_ * lpkg_proto_.coeffRef(j) + 1;
+    T rate = 0.5 * tau_sq_inv_ * lpkg_proto_.coeffRef(j) + 0.5;
     std::gamma_distribution<T> gam( shape, 1 / rate );
     zeta_sq_inv_.coeffRef(j) = gam( gourd::urng() );
   }

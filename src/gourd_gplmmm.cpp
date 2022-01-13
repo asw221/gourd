@@ -108,8 +108,12 @@ int main( const int argc, const char* argv[] ) {
     model.compute_map_estimate( data, input.optim_maxit(),
 				input.optim_xtol() );
     data.subtract_from_y( model.omega() );
-    ologs["_deviations"] <<
-      model.omega().colwise().squaredNorm().adjoint() << std::endl;
+    // ologs["_deviations"] <<
+    //   model.omega().colwise().squaredNorm().adjoint() << std::endl;
+    for ( int j = 0; j < model.omega().cols(); j++ ) {
+      vec_type wj = model.omega().col(j);
+      ologs.write("_deviations", wj.data(), wj.data() + wj.size());
+    }
     //
     if ( input.mcmc_nsamples() > 0 ) {
       // Run MCMC
