@@ -680,6 +680,7 @@ void gourd::surface_gplmm_model<T>::compute_map_estimate(
   T delta = static_cast<T>( HUGE_VAL );
   int i = 0;
   /* First maximize wrt gamma, sigma, xi */
+  std::cout << "Maximizing wrt \u03b2(s), \u03c3(s):" << std::endl;
   while ( i < maxit && delta > tol ) {
     const mat_type g0 = gamma_;
     const vector_type s0 = sigma_sq_inv_;
@@ -688,6 +689,7 @@ void gourd::surface_gplmm_model<T>::compute_map_estimate(
     delta = (gamma_ - g0).colwise().squaredNorm().sum() +
       (sigma_sq_inv_ - s0).squaredNorm();
     ++i;
+    std::cout << "[" << i << "]  \u0394 = " << delta << std::endl;
   }
   if ( i == maxit && delta > tol ) {
     std::cerr << "\t***Warning: coefficients did not converge after "
@@ -697,12 +699,14 @@ void gourd::surface_gplmm_model<T>::compute_map_estimate(
   /* Then maximize wrt omega, sigma, xi */
   delta = static_cast<T>( HUGE_VAL );
   i = 0;
+  std::cout << "\nMaximizing wrt \u03c9(s), \u03c3(s):" << std::endl;
   while ( i < maxit && delta > tol ) {
     const vector_type s0 = sigma_sq_inv_;
     update_omega_cmax( data );
     update_sigma_xi_cmax( data );
     delta = (sigma_sq_inv_ - s0).squaredNorm();
     ++i;
+    std::cout << "[" << i << "]  \u0394 = " << delta << std::endl;
   }
   if ( i == maxit && delta > tol ) {
     std::cerr << "\t***Warning: omega did not converge after "

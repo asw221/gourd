@@ -111,8 +111,8 @@ int main( const int argc, const char* argv[] ) {
     // ologs["_deviations"] <<
     //   model.omega().colwise().squaredNorm().adjoint() << std::endl;
     for ( int j = 0; j < model.omega().cols(); j++ ) {
-      vec_type wj = model.omega().col(j);
-      ologs.write("_deviations", wj.data(), wj.data() + wj.size());
+      vec_type w = model.omega().col(j);
+      ologs.write("_deviations", w.data(), w.data() + w.size());
     }
     //
     if ( input.mcmc_nsamples() > 0 ) {
