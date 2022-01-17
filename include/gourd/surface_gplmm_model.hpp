@@ -132,7 +132,7 @@ namespace gourd {
     void compute_map_estimate(
       const gourd::gplm_full_data<T>& data,
       const int maxit = 100,
-      const T tol = 1e-5
+      const T tol = 1e-6
     );
 
 
@@ -678,16 +678,19 @@ void gourd::surface_gplmm_model<T>::compute_map_estimate(
   std::cout << "Finding MAP estimates:\n";
   //
   T delta = static_cast<T>( HUGE_VAL );
+  T xscale = 1;
   int i = 0;
   /* First maximize wrt gamma, sigma, xi */
   std::cout << "Maximizing wrt \u03b2(s), \u03c3(s):" << std::endl;
-  while ( i < maxit && delta > tol ) {
+  while ( i < maxit && tol < (delta / xscale) ) {
     const mat_type g0 = gamma_;
     const vector_type s0 = sigma_sq_inv_;
     update_gamma_cmax( data );
     update_sigma_xi_cmax( data );
     delta = (gamma_ - g0).colwise().squaredNorm().sum() +
       (sigma_sq_inv_ - s0).squaredNorm();
+    xscale = gamma_.colwise().template lpNorm<1>().sum() +
+      sigma_sq_inv_.template lpNorm<1>();
     ++i;
     std::cout << "[" << i << "]  \u0394 = " << delta << std::endl;
   }
@@ -698,13 +701,15 @@ void gourd::surface_gplmm_model<T>::compute_map_estimate(
   //
   /* Then maximize wrt omega, sigma, xi */
   delta = static_cast<T>( HUGE_VAL );
+  xscale = 1;
   i = 0;
   std::cout << "\nMaximizing wrt \u03c9(s), \u03c3(s):" << std::endl;
-  while ( i < maxit && delta > tol ) {
+  while ( i < maxit && tol < (delta / xscale) ) {
     const vector_type s0 = sigma_sq_inv_;
     update_omega_cmax( data );
     update_sigma_xi_cmax( data );
     delta = (sigma_sq_inv_ - s0).squaredNorm();
+    xscale = sigma_sq_inv_.template lpNorm<1>();
     ++i;
     std::cout << "[" << i << "]  \u0394 = " << delta << std::endl;
   }
