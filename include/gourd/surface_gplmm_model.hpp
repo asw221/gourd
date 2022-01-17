@@ -736,24 +736,26 @@ void gourd::surface_gplmm_model<T>::compute_map_estimate(
   }
   //
   /* Then maximize wrt omega, sigma, xi */
-  delta = static_cast<T>( HUGE_VAL );
-  xscale = 1;
-  i = 0;
-  std::cout << "\nMaximizing wrt \u03c9(s), \u03c3(s):" << std::endl;
-  while ( i < maxit && tol < (delta / xscale) ) {
-    const vector_type s0 = sigma_sq_inv_;
-    update_omega_cmax( data );
-    update_sigma_xi_cmax( data );
-    delta = (sigma_sq_inv_ - s0).squaredNorm();
-    xscale = sigma_sq_inv_.template lpNorm<1>();
-    ++i;
-    std::cout << "[" << i << "]  \u0394 = " << delta << std::endl;
-  }
-  if ( i == maxit && delta > tol ) {
-    std::cerr << "\t***Warning: omega did not converge after "
-	      << maxit << " iterations" << std::endl;
-  }
+  // delta = static_cast<T>( HUGE_VAL );
+  // xscale = 1;
+  // i = 0;
+  // std::cout << "\nMaximizing wrt \u03c9(s), \u03c3(s):" << std::endl;
+  // while ( i < maxit && tol < (delta / xscale) ) {
+  //   const vector_type s0 = sigma_sq_inv_;
+  //   update_omega_cmax( data );
+  //   update_sigma_xi_cmax( data );
+  //   delta = (sigma_sq_inv_ - s0).squaredNorm();
+  //   xscale = sigma_sq_inv_.template lpNorm<1>();
+  //   ++i;
+  //   std::cout << "[" << i << "]  \u0394 = " << delta << std::endl;
+  // }
+  // if ( i == maxit && delta > tol ) {
+  //   std::cerr << "\t***Warning: omega did not converge after "
+  // 	      << maxit << " iterations" << std::endl;
+  // }
   //
+  std::cout << "\nMaximizing wrt \u03c9(s), \u03c3(s):" << std::endl;
+  update_omega_cmax( data );
     // std::cout << "[" << i << "]:\n"
     // 	      << "beta =\n" << (gamma_.topRows(6) * vt_) << "...\n\n"
     // 	      << "sigma = " << sigma_sq_inv_.head(6).cwiseInverse().cwiseSqrt()
