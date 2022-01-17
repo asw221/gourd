@@ -12,6 +12,7 @@
 #include <Eigen/Cholesky>
 #include <Eigen/SparseCholesky>
 
+#include "abseil/accumulator.hpp"
 #include "abseil/covariance_functors.hpp"
 #include "abseil/math.hpp"
 #include "abseil/mcmc/learning_rate.hpp"
@@ -521,10 +522,20 @@ void gourd::surface_gplmm_model<T>::update_sigma_xi_cmax(
 ) {
   const int nloc = sigma_sq_inv_.size();
   const T shape = 0.5 * data.n() * nloc + 0.5;
-  const T rss =
-    ( data.y() -
-      gamma_ * data.xsvd_d().asDiagonal() * data.xsvd_u().adjoint() -
-      omega_ ).rowwise().squaredNorm().sum();
+  abseil::kahan_accumulator<double> accu;
+  for ( int i = 0; i < data.n(); i++ ) {
+    for (int s = 0; s < data.nloc(); s++ ) {
+      T xb = ( data.xsvd_u().row(i) * data.xsvd_d().asDiagonal() *
+	       gamma_.row(s).adjoint() ).coeff(0);
+      T r = data.y(i, s) - xb - omega_.coeffRef(s, i);
+      accu += r * r;
+    }
+  }
+  const T rss = accu;
+  // const T rss =
+  //   ( data.y() -
+  //     gamma_ * data.xsvd_d().asDiagonal() * data.xsvd_u().adjoint() -
+  //     omega_ ).rowwise().squaredNorm().sum();
   const T mode = (shape > T(1) ? (shape - 1) : shape) / (xi_ + rss / 2);
   T sum_isig = 0;
   for ( int s = 0; s < sigma_sq_inv_.size(); s++ ) {
