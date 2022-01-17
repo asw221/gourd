@@ -221,7 +221,8 @@ namespace gourd {
 
     
     T update_gamma_quasinewton(
-      const gourd::gplm_full_data<T>& data
+      const gourd::gplm_full_data<T>& data,
+      const T eta = 0.001
     );
     
     void update_gamma_cmax(
@@ -481,9 +482,10 @@ void gourd::surface_gplmm_model<T>::update_tau() {
 
 template< typename T > 
 T gourd::surface_gplmm_model<T>::update_gamma_quasinewton(
-  const gourd::gplm_full_data<T>& data
+  const gourd::gplm_full_data<T>& data,
+  const T eta
 ) {
-  mat_type dg = (0.001 / tau_sq_inv_) * mass_.irmul( grad_g(data, gamma_) );
+  mat_type dg = (eta / tau_sq_inv_) * mass_.irmul( grad_g(data, gamma_) );
   gamma_.noalias() += dg;
   return dg.colwise().squaredNorm().sum();
 };
@@ -650,12 +652,12 @@ bool gourd::surface_gplmm_model<T>::tune_initial_stepsize(
     it++;
   }
   if ( it >= maxit && tuning_needed ) {
-    std::cerr << "surface_gplmm_model: initial HMC step size "
+    std::cerr << "surface_gplmm_model: initial step size "
 	      << "not found after " << it << " iterations\n"
 	      << "\t(Final value was: " << lr_ << ")\n";
   }
   else {
-    std::cerr << "surface_gplmm_model: HMC step size "
+    std::cerr << "surface_gplmm_model: step size "
 	      << "tuning took " << it << " iterations\n"
 	      << "\tValue: " << lr_
 	      << std::endl;
@@ -693,6 +695,9 @@ void gourd::surface_gplmm_model<T>::compute_map_estimate(
 ) {
   assert( maxit > 0  && "compute_map_estimate: maxit <= 0" );
   assert( tol > T(0) && "compute_map_estimate: tol <= 0" );
+  //
+  tune_initial_stepsize( data );
+  const T eta = lr_ * lr_;
   std::cout << "Finding MAP estimates:\n";
   //
   T delta = static_cast<T>( HUGE_VAL );
@@ -704,7 +709,7 @@ void gourd::surface_gplmm_model<T>::compute_map_estimate(
     const mat_type g0 = gamma_;
     const vector_type s0 = sigma_sq_inv_;
     // update_gamma_cmax( data );
-    delta = update_gamma_quasinewton( data );
+    delta = update_gamma_quasinewton( data, eta );
     update_sigma_xi_cmax( data );
     // delta = (gamma_ - g0).colwise().squaredNorm().sum() +
     //   (sigma_sq_inv_ - s0).squaredNorm();
