@@ -268,7 +268,7 @@ gourd::glm_command_parser::glm_command_parser(
       }
       else if ( arg == "--xtol" ) {
 	process_numeric_argument( argc, argv, i, xtol_ );
-	xtol_ = ( xtol_ <= 1e-16 ) ? 1e-16 : xtol_;
+	xtol_ = ( xtol_ <= 1e-8 ) ? 1e-8 : xtol_;
       }
       else if ( is_file(arg) ) {
 	metric_files_.push_back( arg );

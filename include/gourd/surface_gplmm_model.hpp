@@ -219,6 +219,11 @@ namespace gourd {
       const gourd::gplm_full_data<T>& data
     );
 
+    
+    T update_gamma_quasinewton(
+      const gourd::gplm_full_data<T>& data
+    );
+    
     void update_gamma_cmax(
       const gourd::gplm_full_data<T>& data
     );
@@ -471,6 +476,19 @@ void gourd::surface_gplmm_model<T>::update_tau() {
 
 
 
+/* --- Quasi-Newton update for gamma --- */
+
+
+template< typename T > 
+T gourd::surface_gplmm_model<T>::update_gamma_quasinewton(
+  const gourd::gplm_full_data<T>& data
+) {
+  mat_type dg = (0.001 / tau_sq_inv_) * mass_.irmul( grad_g(data, gamma_) );
+  gamma_.noalias() += dg;
+  return dg.colwise().squaredNorm().sum();
+};
+
+
 /* --- Conditional maximization updates --- */
 
 
@@ -685,10 +703,12 @@ void gourd::surface_gplmm_model<T>::compute_map_estimate(
   while ( i < maxit && tol < (delta / xscale) ) {
     const mat_type g0 = gamma_;
     const vector_type s0 = sigma_sq_inv_;
-    update_gamma_cmax( data );
+    // update_gamma_cmax( data );
+    delta = update_gamma_quasinewton( data );
     update_sigma_xi_cmax( data );
-    delta = (gamma_ - g0).colwise().squaredNorm().sum() +
-      (sigma_sq_inv_ - s0).squaredNorm();
+    // delta = (gamma_ - g0).colwise().squaredNorm().sum() +
+    //   (sigma_sq_inv_ - s0).squaredNorm();
+    delta += (sigma_sq_inv_ - s0).squaredNorm();
     xscale = gamma_.colwise().template lpNorm<1>().sum() +
       sigma_sq_inv_.template lpNorm<1>();
     ++i;
