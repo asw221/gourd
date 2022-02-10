@@ -17,7 +17,11 @@
 #include "gourd/options.hpp"
 #include "gourd/output.hpp"
 #include "gourd/pair_cifti_metric_with_gifti_surface.hpp"
+#ifndef GOURD_GPL_INDEPENDENT_MOMENTA
 #include "gourd/surface_gpl_model2.hpp"  // <- ***
+#else
+#include "gourd/surface_gpl_model_indepmomenta.hpp"  // <- ***
+#endif
 #include "gourd/cmd/glm_command_parser.hpp"
 #include "gourd/data/gplm_sstat.hpp"
 
@@ -193,12 +197,6 @@ int main( const int argc, const char* argv[] ) {
       sigma_fm, ref, cgp,
       input.output_basename() + std::string("_sigma(s).dtseries.nii")
     );
-    // for ( int j = 0; j < beta_fm.cols(); j++ ) {
-    //   std::ostringstream fss;
-    //   fss << input.output_basename() << "betahat_" << j
-    // 	  << ".dtseries.nii";
-    //   gourd::write_matrix_to_cifti( beta_fm.col(j).eval(), ref, fss.str() );
-    // }
 
     //
     model.profile( data );

@@ -36,6 +36,8 @@ namespace gourd {
   /* ****************************************************************/
   /*! Gaussian process linear model for cortical surface data 
    *
+   * For academic purposes: version with independent momentum 
+   * variables
    * 
    */
   template< typename T >
@@ -134,7 +136,6 @@ namespace gourd {
     //
     int leapfrog_steps_;
     abseil::learning_rate lr_;  //
-    gourd::nnp_hess<T> mass_;
 
 
     double partial_loglik(
@@ -369,7 +370,7 @@ double gourd::surface_gpl_model<T>::update_gamma_hmc(
   for ( int step = 0; step < integrator_steps; step++ ) {
     k = (step == (integrator_steps - 1)) ? 0.5 : 1;
     gamma_star_.noalias() +=
-      (eps / tau_sq_inv_) * mass_.irmul( momentum_ ) *
+      (eps / tau_sq_inv_) * momentum_ *
       ( vt_ * zeta_sq.asDiagonal() * vt_.adjoint() );
     momentum_.noalias() += (k * eps) * grad_g( data, gamma_star_ );
   }
@@ -475,8 +476,8 @@ void gourd::surface_gpl_model<T>::sample_momentum_and_energy() {
     energy_momentum_ += pesum;
   }
   energy_momentum_ *= 0.5;
-  momentum_ = std::sqrt(tau_sq_inv_) * mass_.hprod(momentum_).eval()
-    * (zeta_sq_inv_.cwiseSqrt().asDiagonal() * vt_.adjoint());
+  momentum_ = std::sqrt(tau_sq_inv_) * momentum_ *
+    (zeta_sq_inv_.cwiseSqrt().asDiagonal() * vt_.adjoint());
   /* ^^ Inefficient? Not really. Appears to be very marginally faster 
    * than preallocating the memory and copying into momentum_
    */
@@ -487,9 +488,9 @@ void gourd::surface_gpl_model<T>::sample_momentum_and_energy() {
 template< typename T > 
 double gourd::surface_gpl_model<T>::potential_energy() const {
   return (0.5 / tau_sq_inv_) *
-    mass_.triqf( momentum_ *
+    ( momentum_ *
       (vt_ * zeta_sq_inv_.cwiseInverse().cwiseSqrt().asDiagonal())
-    );
+      ).colwise().squaredNorm().sum();
 };
 
 
@@ -737,13 +738,6 @@ gourd::surface_gpl_model<T>::surface_gpl_model(
     data.coordinates(),
     cov,
     nngp_radius,
-    distance
-  );
-  /* Set Mass matrix */
-  mass_ = gourd::nnp_hess<T>(
-    data.coordinates(),
-    cov,
-    mass_rad,
     distance
   );
   /* Set HMC learning rate/step size */

@@ -114,6 +114,24 @@ target_link_libraries(gourd_vwise_glm
 
 
 
+
+
+
+
+## --- gourd_gplm2 ---------------------------------------------------
+## (Independent HMC momenta variant)
+##
+add_executable(gourd_gplm2 gourd_gplm.cpp cifti_xml.cpp)
+set_target_properties(gourd_gplm2 PROPERTIES
+		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
+target_link_libraries(gourd_gplm2
+		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
+		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+target_compile_definitions(gourd_gplm2
+		PUBLIC GOURD_GPL_INDEPENDENT_MOMENTA)
+
+
+
 # target_compile_definitions(___ PUBLIC EIGEN_DONT_PARALLELIZE)
 # ## EIGEN_DONT_PARALLELIZE
 # ## EIGEN_DONT_VECTORIZE
