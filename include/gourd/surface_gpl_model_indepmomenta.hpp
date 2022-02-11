@@ -770,7 +770,7 @@ void gourd::surface_gpl_model<T>::profile(
   dt = 0;
   for ( int i = 0; i < nrep; i++) {
     abseil::timer::start();
-    update_gamma_hmc( data, 10 );
+    update_gamma_hmc( data, leapfrog_steps_ );
     abseil::timer::stop();
     dt += abseil::timer::diff();
   }
