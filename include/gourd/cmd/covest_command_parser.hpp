@@ -20,6 +20,8 @@ namespace gourd {
     void show_help() const override;
     void show_usage() const override;
 
+    bool rescale() const;
+
     double neighborhood() const;
     double tol() const;
 
@@ -35,6 +37,8 @@ namespace gourd {
     const std::vector<double>& theta() const;
 
   private:
+    bool   rescale_;
+    
     double rad_;
     double tol_;
     
@@ -63,6 +67,7 @@ void gourd::covest_command_parser::show_help() const {
   std::cerr << "Options:\n"
 	    << "  --surface      file/path  REQURED. GIFTI surface file \n"
 	    << "  --radius       float      Nearest-Neighbor Gaussian Process radius \n"
+	    << "  --rescale                 Rescale outcome images? (Default = false) \n"
 	    << "  --maxit        int        (Default = 5000) \n"
 	    << "  --print-level  int        0: Silent -- 2: Verbose (Default) \n"
 	    << "  --start        float[3]   Optimization starting point \n"
@@ -106,6 +111,7 @@ gourd::covest_command_parser::covest_command_parser(
   maxit_ = 500;
   print_level_  = 2;
   which_params_ = 3;
+  rescale_ = false;
   dist_  = gourd::dist_code::great_circle;
   cov_   = gourd::cov_code::rbf;
   // -----------------------------------------------------------------
@@ -119,6 +125,9 @@ gourd::covest_command_parser::covest_command_parser(
       if ( arg == "-h" || arg == "--help" ) {
 	this->status_ = call_status::help;
 	break;
+      }
+      else if ( arg == "--rescale" ) {
+	rescale_ = true;
       }
       else if ( arg == "--euclidean" ) {
 	dist_ = gourd::dist_code::euclidean;
@@ -235,6 +244,10 @@ void gourd::covest_command_parser::set_theta_default() {
   };
 };
 
+
+bool gourd::covest_command_parser::rescale() const {
+  return rescale_;
+};
 
 
 double gourd::covest_command_parser::tol() const {

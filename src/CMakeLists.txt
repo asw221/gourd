@@ -62,22 +62,24 @@ target_link_libraries(gourd_gplm
 		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
 
 
-## --- gourd_gplmix --------------------------------------------------
-add_executable(gourd_gplmix gourd_gplmix.cpp cifti_xml.cpp)
-set_target_properties(gourd_gplmix PROPERTIES
+## --- gourd_gplmme --------------------------------------------------
+## Marginal effect variant (correlated error)
+add_executable(gourd_gplmme gourd_gplmme.cpp cifti_xml.cpp)
+set_target_properties(gourd_gplmme PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
-target_link_libraries(gourd_gplmix
+target_link_libraries(gourd_gplmme
 		OPTIM::bobyqa
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
 
 
 
-## --- gourd_gplmmm --------------------------------------------------
-add_executable(gourd_gplmmm gourd_gplmmm.cpp cifti_xml.cpp)
-set_target_properties(gourd_gplmmm PROPERTIES
+## --- gourd_gplmcm --------------------------------------------------
+## Conditional effect variant (MAP estimates-based)
+add_executable(gourd_gplmce gourd_gplmce.cpp cifti_xml.cpp)
+set_target_properties(gourd_gplmce PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
-target_link_libraries(gourd_gplmmm
+target_link_libraries(gourd_gplmce
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
 

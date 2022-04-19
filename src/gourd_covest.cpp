@@ -45,7 +45,10 @@ int main( const int argc, const char* argv[] ) {
       input.metric_files(),
       input.surface_file()
     );
-    data.center();  // data.scale();
+    data.center();
+    if ( input.rescale(); ) {
+      data.scale();
+    }
 
     gourd::sgpl::data_pack pack;
     pack.cov_ptr  = cov_ptr.get();
@@ -73,6 +76,9 @@ int main( const int argc, const char* argv[] ) {
       pack, input.which_params(),
       input.maxit(), input.tol(), input.print_level()
     );
+    if ( input.rescale() ) {
+      cov_ptr->variance( 1 );
+    }
 
     /* Output formatting */
     if ( opt.code != gourd::sgpl::optim_code::success ) {
