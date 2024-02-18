@@ -46,7 +46,7 @@ int main( const int argc, const char* argv[] ) {
       input.surface_file()
     );
     data.center();
-    if ( input.rescale(); ) {
+    if ( input.rescale() ) {
       data.scale();
     }
 

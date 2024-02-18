@@ -1,14 +1,11 @@
 
-find_package( Boost      REQUIRED )
-find_package( Eigen3 3.3 REQUIRED NO_MODULE )
+find_package( Boost QUIET )  # No longer REQUIRED
+
+## find_package( Eigen3 3.3...<4 REQUIRED NO_MODULE )
 find_package( EXPAT      REQUIRED )
 find_package( OpenMP     REQUIRED )
 find_package( ZLIB       REQUIRED )
 
-
-# find_package(FFTW REQUIRED)
-# find_package(ITK REQUIRED)
-# find_package(NLOPT REQUIRED)
 
 
 if (NOT TARGET OpenMP::OpenMP_CXX)
@@ -20,8 +17,15 @@ endif()
 
 include_directories( ${gourd_SOURCE_DIR}/include )
 include_directories( ${gourd_SOURCE_DIR}/include/nifti )
-include_directories( ${Boost_INCLUDE_DIRS} )
+include_directories( ${gourd_SOURCE_DIR}/lib/Eigen3 )
 include_directories( ${gourd_SOURCE_DIR}/lib/abseil/include )
+
+if ( DEFINED Boost_INCLUDE_DIRS )
+  include_directories( ${Boost_INCLUDE_DIRS} )
+endif()
+
+
+
 
 
 link_directories(${gourd_SOURCE_DIR}/lib)
@@ -40,7 +44,8 @@ set_target_properties(gourd_credband PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_credband
 		NIFTI::cifti NIFTI::nifti2 NIFTI::gifti
-		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+		EXPAT::EXPAT ZLIB::ZLIB)
+  ## Eigen3::Eigen
 
 
 ## --- gourd_covest --------------------------------------------------
@@ -50,7 +55,8 @@ set_target_properties(gourd_covest PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 target_link_libraries(gourd_covest
 	OPTIM::bobyqa
 	NIFTI::gifti NIFTI::cifti NIFTI::nifti2
-	EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+	EXPAT::EXPAT ZLIB::ZLIB)
+  ## Eigen3::Eigen
 
 
 ## --- gourd_gplm ----------------------------------------------------
@@ -59,7 +65,8 @@ set_target_properties(gourd_gplm PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_gplm
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
-		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+		EXPAT::EXPAT ZLIB::ZLIB)
+  ## Eigen3::Eigen
 
 
 ## --- gourd_gplmme --------------------------------------------------
@@ -70,7 +77,8 @@ set_target_properties(gourd_gplmme PROPERTIES
 target_link_libraries(gourd_gplmme
 		OPTIM::bobyqa
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
-		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+		EXPAT::EXPAT ZLIB::ZLIB)
+  ## Eigen3::Eigen
 
 
 
@@ -81,7 +89,8 @@ set_target_properties(gourd_gplmce PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_gplmce
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
-		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+		EXPAT::EXPAT ZLIB::ZLIB)
+  ## Eigen3::Eigen
 
 
 
@@ -93,7 +102,8 @@ set_target_properties(gourd_sglm PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_sglm
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
-		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+		EXPAT::EXPAT ZLIB::ZLIB)
+  ## Eigen3::Eigen
 
 
 ## --- cifti_info ----------------------------------------------------
@@ -112,7 +122,8 @@ set_target_properties(gourd_vwise_glm PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_vwise_glm
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
-		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+		EXPAT::EXPAT ZLIB::ZLIB)
+  ## Eigen3::Eigen
 
 
 
@@ -128,17 +139,18 @@ set_target_properties(gourd_gplm2 PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_gplm2
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
-		EXPAT::EXPAT ZLIB::ZLIB Eigen3::Eigen)
+		EXPAT::EXPAT ZLIB::ZLIB)
+  ## Eigen3::Eigen
 target_compile_definitions(gourd_gplm2
 		PUBLIC GOURD_GPL_INDEPENDENT_MOMENTA)
+
 
 
 
 # target_compile_definitions(___ PUBLIC EIGEN_DONT_PARALLELIZE)
 # ## EIGEN_DONT_PARALLELIZE
 # ## EIGEN_DONT_VECTORIZE
-
-
+##
 ## ## --- gourd_gplmixap ------------------------------------------------
 ## add_executable(gourd_gplmixap gourd_gplmix.cpp cifti_xml.cpp)
 ## set_target_properties(gourd_gplmixap PROPERTIES

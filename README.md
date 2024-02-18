@@ -2,14 +2,15 @@
 # Gourd: Analysis of Cortical Surface fMRI
 
 #### Dependencies
- - [Eigen3](http://eigen.tuxfamily.org/index.php?title=Main_Page)
  - [Expat](https://libexpat.github.io) - (Likely already be on your
    system) 
  - [zlib](https://www.zlib.net/) - (Likely already be on your system)
  
  
 Additionally, `gourd` will  make use of mathematical functions from
-[boost](https://www.boost.org/) if it is available.
+[boost](https://www.boost.org/) if it is available. `gourd` includes a
+copy of [Eigen3](http://eigen.tuxfamily.org/index.php?title=Main_Page)
+internally. 
 
 We require a `C`/`C++` compiler compatible with the `C++17`
 standard (e.g. `gcc` >= `8.3.0` should suffice).

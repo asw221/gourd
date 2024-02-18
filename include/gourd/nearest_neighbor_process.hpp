@@ -474,6 +474,7 @@ AccumT gourd::nnp_hess<T, AccumT>::ldet() const {
     err = (pb - logdet) - pa;
     logdet = pb;
   }
+  logdet += 2 * std::log( (result_type)d_.size() );  // ADDED **
   return logdet;
 };
 

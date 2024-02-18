@@ -1,24 +1,24 @@
 
-cmake_minimum_required(VERSION 3.12)
-project(gourd)
+cmake_minimum_required( VERSION 3.19 )
+project( gourd )
 
 
-set(CMAKE_CXX_FLAGS "-O2 -Wall")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -DNDEBUG")
-set(CMAKE_VERBOSE_MAKEFILE ON)
+set( CMAKE_CXX_FLAGS "-O2 -Wall" )
+set( CMAKE_CXX_FLAGS_DEBUG "-g -O0" )
+set( CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -DNDEBUG" )
+set( CMAKE_VERBOSE_MAKEFILE ON )
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set( CMAKE_CXX_STANDARD 17 )
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 
 
-add_subdirectory(lib/bobyqa)
-add_subdirectory(lib/nifti)
-add_subdirectory(lib/gifticlib-1.0.9)
-add_subdirectory(src)
+add_subdirectory( lib/bobyqa )
+add_subdirectory( lib/nifti )
+add_subdirectory( lib/gifticlib-1.0.9 )
+add_subdirectory( src )
 
 
 
