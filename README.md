@@ -19,7 +19,7 @@ standard (e.g. `gcc` >= `8.3.0` should suffice).
  
 #### Installation
 Using cmake with dependencies installed:
-```
+```console
 mkdir gourd/build && cd gourd/build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make
@@ -36,7 +36,7 @@ typed one after the other, or wildcard completions can be used for
 convenience.
 
 Basic syntax might look like the following:
-```
+```console
 ./gourd_covest path/to/data*.nii --surface path/to/surf.gii \
   --radius 6.0    # Nearest Neighbor Gaussian Process radius \
   --tol 1e-8      # Optimization tolerance (Default = 1e-6) \
@@ -45,7 +45,7 @@ Basic syntax might look like the following:
 
 
 Implemented covariance function options include:
-```
+```console
 Covariance Functions:
   --radial-basis       (Default) 
   --rational-quadratic 
@@ -58,7 +58,7 @@ variance, (ii) correlation bandwidth, and (iii) smoothness. The
 Bessel functions, and may be somewhat slow.
 
 The distance metric options include:
-```
+```console
 Distance Metrics:
   --great-circle       (Default) 
   --euclidean 
@@ -77,6 +77,7 @@ shape file.
 
 Basic syntax might look like the following:
 ```console
+## "Working" model from Whiteman et al. 2024+
 ./gourd_gplm path/to/data*.nii --surface path/to/surf.gii \
   --covariates path/to/x.csv  # Mean model design matrix \
   --radial-basis              # GP Covariance function selection \
@@ -95,3 +96,11 @@ Basic syntax might look like the following:
 
 #### To-Do
  - [] Enhance help pages
+
+
+
+#### References
+
+Whiteman, Johnson, and Kang (2024+) "Bayesian inference for
+group-level cortical surface image-on-scalar-regression with Gaussian
+process priors." [ArXiv](https://arxiv.org/abs/2306.03663).
