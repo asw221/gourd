@@ -76,7 +76,7 @@ require input in the form of CIFTI/NIFTI-2 outcome images and a GIFTI
 shape file.
 
 Basic syntax might look like the following:
-```bash
+```console
 ./gourd_gplm path/to/data*.nii --surface path/to/surf.gii \
   --covariates path/to/x.csv  # Mean model design matrix \
   --radial-basis              # GP Covariance function selection \
