@@ -1,11 +1,10 @@
 
 find_package( Boost QUIET )  # No longer REQUIRED
 
-## find_package( Eigen3 3.3...<4 REQUIRED NO_MODULE )
 find_package( EXPAT      REQUIRED )
 find_package( OpenMP     REQUIRED )
 find_package( ZLIB       REQUIRED )
-
+## find_package( Eigen3 3.3...<4 REQUIRED NO_MODULE )
 
 
 if (NOT TARGET OpenMP::OpenMP_CXX)
@@ -25,10 +24,7 @@ if ( DEFINED Boost_INCLUDE_DIRS )
 endif()
 
 
-
-
-
-link_directories(${gourd_SOURCE_DIR}/lib)
+link_directories( ${gourd_SOURCE_DIR}/lib )
 
 
 
@@ -38,17 +34,21 @@ add_executable(hello_gourd hello_gourd.cpp)
 set_target_properties(hello_gourd PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 		"${CMAKE_BINARY_DIR}/../bin")
 
+
 ## --- gourd_credband ------------------------------------------------
+## Compute credible bands from MCMC log files
+##
 add_executable(gourd_credband gourd_credband.cpp cifti_xml.cpp)
 set_target_properties(gourd_credband PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_credband
 		NIFTI::cifti NIFTI::nifti2 NIFTI::gifti
 		EXPAT::EXPAT ZLIB::ZLIB)
-  ## Eigen3::Eigen
 
 
 ## --- gourd_covest --------------------------------------------------
+## Estimate spatial covariance function parameters
+##
 add_executable(gourd_covest gourd_covest.cpp cifti_xml.cpp)
 set_target_properties(gourd_covest PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 		"${CMAKE_BINARY_DIR}/../bin")
@@ -56,21 +56,22 @@ target_link_libraries(gourd_covest
 	OPTIM::bobyqa
 	NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 	EXPAT::EXPAT ZLIB::ZLIB)
-  ## Eigen3::Eigen
 
 
 ## --- gourd_gplm ----------------------------------------------------
+## Working model variant
+##
 add_executable(gourd_gplm gourd_gplm.cpp cifti_xml.cpp)
 set_target_properties(gourd_gplm PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_gplm
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 		EXPAT::EXPAT ZLIB::ZLIB)
-  ## Eigen3::Eigen
 
 
 ## --- gourd_gplmme --------------------------------------------------
 ## Marginal effect variant (correlated error)
+##
 add_executable(gourd_gplmme gourd_gplmme.cpp cifti_xml.cpp)
 set_target_properties(gourd_gplmme PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
@@ -78,32 +79,32 @@ target_link_libraries(gourd_gplmme
 		OPTIM::bobyqa
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 		EXPAT::EXPAT ZLIB::ZLIB)
-  ## Eigen3::Eigen
 
 
 
 ## --- gourd_gplmcm --------------------------------------------------
 ## Conditional effect variant (MAP estimates-based)
+##
 add_executable(gourd_gplmce gourd_gplmce.cpp cifti_xml.cpp)
 set_target_properties(gourd_gplmce PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_gplmce
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 		EXPAT::EXPAT ZLIB::ZLIB)
-  ## Eigen3::Eigen
 
 
 
 
 
 ## --- gourd_sglm ----------------------------------------------------
+## Vertex-wise linear models with neighborhood-based spatial smoothing
+##
 add_executable(gourd_sglm gourd_sglm.cpp cifti_xml.cpp)
 set_target_properties(gourd_sglm PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_sglm
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 		EXPAT::EXPAT ZLIB::ZLIB)
-  ## Eigen3::Eigen
 
 
 ## --- cifti_info ----------------------------------------------------
@@ -117,13 +118,14 @@ target_link_libraries(cifti_info NIFTI::cifti NIFTI::nifti2)
 
 
 ## --- gourd_vwise_glm -----------------------------------------------
+## Vertex-wise linear models (no spatial smoothing)
+##
 add_executable(gourd_vwise_glm gourd_vwise_glm.cpp cifti_xml.cpp)
 set_target_properties(gourd_vwise_glm PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 target_link_libraries(gourd_vwise_glm
 		NIFTI::gifti NIFTI::cifti NIFTI::nifti2
 		EXPAT::EXPAT ZLIB::ZLIB)
-  ## Eigen3::Eigen
 
 
 
