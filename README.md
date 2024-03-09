@@ -36,10 +36,10 @@ typed one after the other, or wildcard completions can be used for
 convenience.
 
 Basic syntax might look like the following:
-```sh
+```properties
 ./gourd_covest path/to/data*.nii --surface path/to/surf.gii \
-  --radius 6.0    # Nearest Neighbor Gaussian Process radius \
-  --tol 1e-8      # Optimization tolerance (Default = 1e-6) \
+  --radius 6.0 \    # Nearest Neighbor Gaussian Process radius
+  --tol 1e-8   \   # Optimization tolerance (Default = 1e-6)
   --radial-basis
 ```
 
