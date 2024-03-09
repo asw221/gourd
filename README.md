@@ -36,7 +36,7 @@ typed one after the other, or wildcard completions can be used for
 convenience.
 
 Basic syntax might look like the following:
-```console
+```properties
 ./gourd_covest path/to/data*.nii --surface path/to/surf.gii \
   --radius 6.0 \    # Nearest Neighbor Gaussian Process radius
   --tol 1e-8   \   # Optimization tolerance (Default = 1e-6)
@@ -76,7 +76,7 @@ require input in the form of CIFTI/NIFTI-2 outcome images and a GIFTI
 shape file.
 
 Basic syntax might look like the following:
-```console
+```properties
 ./gourd_gplm path/to/data*.nii --surface path/to/surf.gii \
   --covariates path/to/x.csv  # Mean model design matrix \
   --radial-basis              # GP Covariance function selection \
