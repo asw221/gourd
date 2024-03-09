@@ -19,7 +19,7 @@ standard (e.g. `gcc` >= `8.3.0` should suffice).
  
 #### Installation
 Using cmake with dependencies installed:
-```console
+```properties
 mkdir gourd/build && cd gourd/build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make
@@ -77,7 +77,6 @@ shape file.
 
 Basic syntax might look like the following:
 ```console
-## "Working" model from Whiteman et al. 2024+
 ./gourd_gplm path/to/data*.nii --surface path/to/surf.gii \
   --covariates path/to/x.csv  # Mean model design matrix \
   --radial-basis              # GP Covariance function selection \
