@@ -113,6 +113,8 @@ std::vector< gourd::band<float> > gourd::get_file_credbands(
 ) {
   /* Method from Ruppert, Wand, and Carroll, 2003 */
   const gourd::band<float> sstat = gourd::get_file_mean_stderr( fname );
+  // sstat.lower = pointwise mean
+  // sstat.upper = pointwise standard error
   const std::vector<float> norms =
     gourd::get_file_lpnorms<p>( fname, sstat.lower, sstat.upper );
   const std::vector<float> q = abseil::quantile(

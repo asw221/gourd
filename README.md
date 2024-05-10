@@ -92,6 +92,19 @@ Basic syntax might look like the following:
   --seed 48109                # URNG seed
 ```
 
+Related model fitting programs include:
+- Above is example syntax for a fast "working" model (see [References](#References)).
+- `gourd_gplmme` for a "marginal" model variant. This is generally
+  more accurate than the above working model, but is also slower and
+  more resource intensive.
+- `gourd_gplmce` for a "conditional" model variant. We do not
+  recommend this version for general practice.
+- `gourd_sglm` for analysis with the standard vertex-wise general
+  linear model. Our treatment here uses a Bayesian implementation
+  with independent Jeffreys priors and Gibbs updates to facilitate
+  comparisons with the alternatives above.
+
+
 
 #### To-Do
  - [] Enhance help pages
