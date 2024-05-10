@@ -66,8 +66,8 @@ Distance Metrics:
 
 
 
-### Bayesian estimation of spatially varying coefficient (SVC)
-### regression models
+### Bayesian estimation of spatially varying coefficient (SVC) regression models
+
 `Gourd` contains several different programs that can be used to
 estimate group-level cortical surface SVC regression models. The
 `gourd_gplm` function, for example, fits the working regression model
